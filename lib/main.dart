@@ -94,7 +94,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
       ),
 
       body: MasonryGridView.count(
-        crossAxisCount: 3, // 2 columns like Pinterest
+        crossAxisCount: 4, // 2 columns like Pinterest
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         padding: const EdgeInsets.all(10),
@@ -128,14 +128,29 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
               child: Column(
                 children: [
                   Stack(
+                    /*
+                    The Stack Rule: Every widget inside a Stack is layered on top of the previous one, 
+                    starting from the top-left corner by default.
+                    */
                     children: [
                       // coffee Image
                       Image.asset(
-                        drink['image']!,
+                        drink['image'] ??
+                            'assets/images/matcha_latte.jpg', // Default image
                         fit: BoxFit.cover,
                         // This is the Pinterest trick:
                         // Some images will be taller than others automatically
                         // based on the original image aspect ratio.
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            
+                            color: Colors.brown[100],
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.brown,
+                            ),
+                          );
+                        },
                       ),
                       Positioned(
                         top: 8,
@@ -229,7 +244,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
         onPressed: () =>
             setState(() => _count++), // telling the class to re build
         tooltip: 'Increment Counter',
-        child: const Icon(Icons.shopping_bag, color: Colors.brown ),
+        child: const Icon(Icons.shopping_bag, color: Colors.brown),
       ),
     );
   }
