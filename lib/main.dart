@@ -33,41 +33,48 @@ class ScaffoldExample extends StatefulWidget {
 class _ScaffoldExampleState extends State<ScaffoldExample> {
   int _count = 0;
 
-  final List<Map<String, String>> _coffeeMenu = [
+  final List<Map<String, dynamic>> _coffeeMenu = [
     {
       'name': 'Matcha Latte',
       'image': 'assets/images/matcha_latte.jpg',
       'status': 'available',
+      'isfavorite': false,
     },
     {
       'name': 'Cortado',
       'image': 'assets/images/cortado.jpg',
       'status': 'out_of_stock',
+      'isfavorite': false,
     },
     {
       'name': 'Flat White',
       'image': 'assets/images/flat_white.jpg',
       'status': 'out_of_stock',
+      'isfavorite': false,
     },
     {
       'name': 'Cappuccino',
       'image': 'assets/images/cappuccino.jpg',
       'status': 'available',
+      'isfavorite': false,
     },
     {
       'name': 'Espresso',
       'image': 'assets/images/espresso.jpg',
       'status': 'available',
+      'isfavorite': false,
     },
     {
       'name': 'Hot Chocolate',
       'image': 'assets/images/hot_choco.jpg',
       'status': 'available',
+      'isfavorite': false,
     },
     {
       'name': 'Hot Latte',
       'image': 'assets/images/hot_latte.jpg',
       'status': 'available',
+      'isfavorite': false,
     },
   ];
 
@@ -120,26 +127,56 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
               },
               child: Column(
                 children: [
-                  Image.asset(
-                    drink['image']!,
-                    fit: BoxFit.cover,
-                    // This is the Pinterest trick:
-                    // Some images will be taller than others automatically
-                    // based on the original image aspect ratio.
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      drink['name']!,
-                      style: TextStyle(
-                        fontFamily:
-                            'Melodrame', // This must match the 'family' name in pubspec
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.brown[900],
+                  Stack(
+                    children: [
+                      // coffee Image
+                      Image.asset(
+                        drink['image']!,
+                        fit: BoxFit.cover,
+                        // This is the Pinterest trick:
+                        // Some images will be taller than others automatically
+                        // based on the original image aspect ratio.
                       ),
-                      //style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              // Safety: if isFavorite is null, treat it as false
+                              bool currentFav = drink['isFavorite'] ?? false;
+                              drink['isFavorite'] = !currentFav;
+                            });
+                          },
+                          child: Icon(
+                            // Use ?? false here to prevent the 'Null' is not a 'bool' error
+                            (drink['isFavorite'] ?? false)
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: (drink['isFavorite'] ?? false)
+                                ? Colors.red
+                                : Colors.white,
+                            shadows: const [
+                              Shadow(color: Colors.black54, blurRadius: 10),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          drink['name']!,
+                          style: TextStyle(
+                            fontFamily:
+                                'Melodrame', // This must match the 'family' name in pubspec
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown[900],
+                          ),
+                          //style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -192,7 +229,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
         onPressed: () =>
             setState(() => _count++), // telling the class to re build
         tooltip: 'Increment Counter',
-        child: const Icon(Icons.next_plan),
+        child: const Icon(Icons.shopping_bag, color: Colors.brown ),
       ),
     );
   }
