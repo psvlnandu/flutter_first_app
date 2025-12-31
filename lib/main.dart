@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 void main() {
   // starting point
@@ -67,14 +68,70 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
       'name': 'Hot Latte',
       'image': 'assets/images/hot_latte.jpg',
       'status': 'available',
-    }
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Old Market Coffee')),
-      body: ListView.builder(
+
+      body: MasonryGridView.count(
+        crossAxisCount: 3, // 2 columns like Pinterest
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        padding: const EdgeInsets.all(10),
+        itemCount: _coffeeMenu.length,
+        itemBuilder: (context, index) {
+          final drink = _coffeeMenu[index];
+
+          return Card(
+            clipBehavior: Clip.antiAlias, // Ensures image corners are rounded
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: InkWell(
+              // Makes the whole card tappable
+              onTap: () {
+                bool isOut = drink['status'] == 'out_of_stock';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isOut
+                          ? 'Oops! ${drink['name']} is out of stock.'
+                          : '${drink['name']} added to cart!',
+                    ),
+                    backgroundColor: isOut
+                        ? Colors.brown[400]
+                        : Colors.pink[400],
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  Image.asset(
+                    drink['image']!,
+                    fit: BoxFit.cover,
+                    // This is the Pinterest trick:
+                    // Some images will be taller than others automatically
+                    // based on the original image aspect ratio.
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      drink['name']!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      /*
+      ListView.builder(
         itemCount: _coffeeMenu.length,
         itemBuilder: (context, index) {
           final drink = _coffeeMenu[index];
@@ -112,6 +169,8 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
         },
       ),
       // Center(child: Text('you have selected ${_drinks[_count % _drinks.length]} ')),
+      
+      */
       floatingActionButton: FloatingActionButton(
         onPressed: () =>
             setState(() => _count++), // telling the class to re build
