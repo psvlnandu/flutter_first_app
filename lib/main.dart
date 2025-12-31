@@ -31,45 +31,81 @@ class ScaffoldExample extends StatefulWidget {
 // mutable
 class _ScaffoldExampleState extends State<ScaffoldExample> {
   int _count = 0;
-  final List _drinks = ['Matcha Latte', 'Cortado', 'Flat White', 'Cappuccino', 'Espresso', 'Hot Chocolate'];
-  final List _drink_imgs = [];
-  final List _out_of_order = ['Matcha Latte', 'Hot Chocolate'];
+
+  final List<Map<String, String>> _coffeeMenu = [
+    {
+      'name': 'Matcha Latte',
+      'image': 'assets/images/matcha_latte.jpg',
+      'status': 'available',
+    },
+    {
+      'name': 'Cortado',
+      'image': 'assets/images/cortado.jpg',
+      'status': 'out_of_stock',
+    },
+    {
+      'name': 'Flat White',
+      'image': 'assets/images/flat_white.jpg',
+      'status': 'out_of_stock',
+    },
+    {
+      'name': 'Cappuccino',
+      'image': 'assets/images/cappuccino.jpg',
+      'status': 'available',
+    },
+    {
+      'name': 'Espresso',
+      'image': 'assets/images/espresso.jpg',
+      'status': 'available',
+    },
+    {
+      'name': 'Hot Chocolate',
+      'image': 'assets/images/hot_choco.jpg',
+      'status': 'available',
+    },
+    {
+      'name': 'Hot Latte',
+      'image': 'assets/images/hot_latte.jpg',
+      'status': 'available',
+    }
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Old Market Coffee')),
       body: ListView.builder(
-        itemCount: _drinks.length,
+        itemCount: _coffeeMenu.length,
         itemBuilder: (context, index) {
+          final drink = _coffeeMenu[index];
           return Card(
             margin: const EdgeInsets.all(15),
             child: ListTile(
-              leading: const Icon(Icons.coffee),
-              title: Text(_drinks[index]),
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  drink['image']!,
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              title: Text(drink['name']!),
               onTap: () {
-                if (_out_of_order.contains(_drinks[index])) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Oops! ${_drinks[index]} is currently out of stock.',
-                      ),
-                      backgroundColor: Colors.brown[400],
-                      behavior: SnackBarBehavior.floating,
+                bool isOut = drink['status'] == 'out_of_stock';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isOut
+                          ? 'Oops! ${drink['name']} is out of stock.'
+                          : '${drink['name']} added to cart!',
                     ),
-                  );
-                }else{
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        ' ${_drinks[index]} added to your cart.',
-                      ),
-                      backgroundColor: Colors.pink[400],
-                      behavior: SnackBarBehavior.floating,
-                      
-                    ),
-                  );
-                }
+                    backgroundColor: isOut
+                        ? Colors.brown[400]
+                        : Colors.pink[400],
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               },
             ),
           );
