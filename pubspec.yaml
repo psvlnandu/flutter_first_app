@@ -64,6 +64,16 @@ flutter:
     - assets/images/hot_choco.jpg
     - assets/images/hot_latte.jpg
     - assets/images/matcha_latte.jpg
+  fonts:
+    - family: LaGrazielaScriptDemo
+      fonts:
+        - asset: assets/fonts/LaGrazielaScriptDemo.otf
+    - family: Coolvetica
+      fonts:
+        - asset: assets/fonts/CoolveticaRg.otf
+    - family: Melodrame
+      fonts:
+        - asset: assets/fonts/Relationship_of_melodrame.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

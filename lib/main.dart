@@ -74,7 +74,17 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Old Market Coffee')),
+      appBar: AppBar(
+        title: const Text(
+          'Old Market Coffee',
+          style: TextStyle(
+            fontFamily:
+                'LaGrazielaScriptDemo', // This must match the 'family' name in pubspec
+            fontSize: 45,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
 
       body: MasonryGridView.count(
         crossAxisCount: 3, // 2 columns like Pinterest
@@ -121,7 +131,14 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
                       drink['name']!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontFamily:
+                            'Melodrame', // This must match the 'family' name in pubspec
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown[900],
+                      ),
+                      //style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
