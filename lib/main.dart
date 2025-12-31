@@ -37,7 +37,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Old  Coffee')),
-      body: Center(child: Text('you have selected ${_drinks[_count]} ')),
+      body: Center(child: Text('you have selected ${_drinks[_count % _drinks.length]} ')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => setState(() => _count++), // telling the class to re build
         tooltip: 'Increment Counter',
