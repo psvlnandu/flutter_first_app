@@ -23,7 +23,9 @@ jobs:
 
       # MUST BE BEFORE BUILD: Create the secret file
       - name: Create .env file
-        run: echo "API_KEY=${{ secrets.API_KEY }}" > .env
+        run: |
+          echo "API_KEY=${{ secrets.API_KEY }}" > .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
 
       # MUST BE BEFORE BUILD: Generate the Envied code
       - name: Generate Envied code
