@@ -36,10 +36,26 @@ class ScaffoldExample extends StatefulWidget {
 class _ScaffoldExampleState extends State<ScaffoldExample> {
   int _count = 0;
   List<Map<String, dynamic>> _flattenedFeed = [];
+
+  int _currentPage = 1;
+  bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    _loadFullFeed();
+    _loadFullFeed(); // Load the first page
+
+    // Listen to scroll movements
+    _scrollController.addListener(() {
+      // If we are at 80% of the scroll height, load more!
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoading) {
+          _loadFullFeed();
+        }
+      }
+    });
   }
 
   final List<Map<String, dynamic>> _coffeeMenu = [
