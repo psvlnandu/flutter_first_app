@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../env/env.dart'; // Import your Env class
 
 void main() {
   // starting point
@@ -36,43 +39,43 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
       'name': 'Matcha Latte',
-      'image': 'assets/images/matcha_latte.jpg',
+      'image': <String>[],
       'status': 'available',
       'isfavorite': false,
     },
     {
       'name': 'Cortado',
-      'image': 'assets/images/cortado.jpg',
+      'image':<String>[],
       'status': 'out_of_stock',
       'isfavorite': false,
     },
     {
       'name': 'Flat White',
-      'image': 'assets/images/flat_white.jpg',
+      'image': <String>[],
       'status': 'out_of_stock',
       'isfavorite': false,
     },
     {
       'name': 'Cappuccino',
-      'image': 'assets/images/cappuccino.jpg',
+      'image':<String>[],
       'status': 'available',
       'isfavorite': false,
     },
     {
       'name': 'Espresso',
-      'image': 'assets/images/espresso.jpg',
+      'image':<String>[],
       'status': 'available',
       'isfavorite': false,
     },
     {
       'name': 'Hot Chocolate',
-      'image': 'assets/images/hot_choco.jpg',
+      'image': <String>[],
       'status': 'available',
       'isfavorite': false,
     },
     {
       'name': 'Hot Latte',
-      'image': 'assets/images/hot_latte.jpg',
+      'image': <String>[],
       'status': 'available',
       'isfavorite': false,
     },
@@ -133,25 +136,40 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
                     starting from the top-left corner by default.
                     */
                     children: [
-                      // coffee Image
-                      Image.asset(
-                        drink['image'] ??
-                            'assets/images/matcha_latte.jpg', // Default image
-                        fit: BoxFit.cover,
-                        // This is the Pinterest trick:
-                        // Some images will be taller than others automatically
-                        // based on the original image aspect ratio.
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            
-                            color: Colors.brown[100],
-                            child: const Icon(
-                              Icons.broken_image,
-                              color: Colors.brown,
-                            ),
-                          );
+                      // FUTUREBUILDER: The bridge between your list and the API
+                      FutureBuilder<List<String>>(
+                        future: getCoffeeImageUrl(
+                          drink['name'],
+                        ), // Use drink name as search query
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            // While waiting for the API response
+                            return Container(
+                              height: 150,
+                              color: Colors.grey[200],
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          } else if (snapshot.hasError ||
+                              !snapshot.hasData ||
+                              snapshot.data!.isEmpty) {
+                            // Fallback if API fails or no image found
+                            return Image.asset(
+                              drink['image'],
+                              fit: BoxFit.cover,
+                            );
+                          } else {
+                            // SUCCESS: Use the first URL from your Unsplash function
+                            return Image.network(
+                              snapshot.data![0],
+                              fit: BoxFit.cover,
+                            );
+                          }
                         },
                       ),
+
                       Positioned(
                         top: 8,
                         right: 8,
@@ -247,6 +265,26 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
         child: const Icon(Icons.shopping_bag, color: Colors.brown),
       ),
     );
+  }
+}
+
+Future<List<String>> getCoffeeImageUrl(String query) async {
+  final String api_key = Env.apiKey; // Use your actual key
+  final response = await http.get(
+    Uri.parse('https://api.unsplash.com/search/photos?query=$query&per_page=10'),
+    headers: {'Authorization': 'Client-ID $api_key'},
+  );
+
+  if (response.statusCode == 200) {
+    var data = jsonDecode(response.body);
+    // Unsplash returns a list of results; we take the first one's 'regular' URL
+    List<String> urls = [];
+    for (var result in data['results']) {
+      urls.add(result['urls']['regular']);
+    }
+    return urls;
+  } else {
+    throw Exception('Failed to load photos from Unsplash');
   }
 }
 
