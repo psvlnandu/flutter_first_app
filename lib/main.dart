@@ -35,6 +35,12 @@ class ScaffoldExample extends StatefulWidget {
 // mutable
 class _ScaffoldExampleState extends State<ScaffoldExample> {
   int _count = 0;
+  List<Map<String, dynamic>> _flattenedFeed = [];
+  @override
+  void initState() {
+    super.initState();
+    _loadFullFeed();
+  }
 
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
@@ -45,7 +51,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
     },
     {
       'name': 'Cortado',
-      'image':<String>[],
+      'image': <String>[],
       'status': 'out_of_stock',
       'isfavorite': false,
     },
@@ -57,13 +63,13 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
     },
     {
       'name': 'Cappuccino',
-      'image':<String>[],
+      'image': <String>[],
       'status': 'available',
       'isfavorite': false,
     },
     {
       'name': 'Espresso',
-      'image':<String>[],
+      'image': <String>[],
       'status': 'available',
       'isfavorite': false,
     },
@@ -80,6 +86,28 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
       'isfavorite': false,
     },
   ];
+
+  Future<void> _loadFullFeed() async {
+    List<Map<String, dynamic>> tempFeed = [];
+
+    for (var drink in _coffeeMenu) {
+      // Fetch 10 images for this specific drink
+      List<String> urls = await getCoffeeImageBatch(drink['name']);
+
+      for (var url in urls) {
+        tempFeed.add({
+          'name': drink['name'],
+          'image': url, // This is now a direct Network URL
+          'isfavorite': false,
+        });
+      }
+    }
+    setState(() {
+      _flattenedFeed = tempFeed;
+      _flattenedFeed
+          .shuffle(); // Make it look like a real Pinterest discovery feed
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +129,9 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         padding: const EdgeInsets.all(10),
-        itemCount: _coffeeMenu.length,
+        itemCount: _flattenedFeed.length,
         itemBuilder: (context, index) {
-          final drink = _coffeeMenu[index];
+          final item = _flattenedFeed[index];
 
           return Card(
             clipBehavior: Clip.antiAlias, // Ensures image corners are rounded
@@ -113,13 +141,13 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
             child: InkWell(
               // Makes the whole card tappable
               onTap: () {
-                bool isOut = drink['status'] == 'out_of_stock';
+                bool isOut = item['status'] == 'out_of_stock';
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       isOut
-                          ? 'Oops! ${drink['name']} is out of stock.'
-                          : '${drink['name']} added to cart!',
+                          ? 'Oops! ${item['name']} is out of stock.'
+                          : '${item['name']} added to cart!',
                     ),
                     backgroundColor: isOut
                         ? Colors.brown[400]
@@ -136,38 +164,10 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
                     starting from the top-left corner by default.
                     */
                     children: [
-                      // FUTUREBUILDER: The bridge between your list and the API
-                      FutureBuilder<List<String>>(
-                        future: getCoffeeImageUrl(
-                          drink['name'],
-                        ), // Use drink name as search query
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            // While waiting for the API response
-                            return Container(
-                              height: 150,
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          } else if (snapshot.hasError ||
-                              !snapshot.hasData ||
-                              snapshot.data!.isEmpty) {
-                            // Fallback if API fails or no image found
-                            return Image.asset(
-                              drink['image'],
-                              fit: BoxFit.cover,
-                            );
-                          } else {
-                            // SUCCESS: Use the first URL from your Unsplash function
-                            return Image.network(
-                              snapshot.data![0],
-                              fit: BoxFit.cover,
-                            );
-                          }
-                        },
+                      Image.network(
+                        item['image'],
+                        fit: BoxFit.cover,
+                        // The masonry layout loves images of different heights!
                       ),
 
                       Positioned(
@@ -177,16 +177,16 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
                           onTap: () {
                             setState(() {
                               // Safety: if isFavorite is null, treat it as false
-                              bool currentFav = drink['isFavorite'] ?? false;
-                              drink['isFavorite'] = !currentFav;
+                              bool currentFav = item['isFavorite'] ?? false;
+                              item['isFavorite'] = !currentFav;
                             });
                           },
                           child: Icon(
                             // Use ?? false here to prevent the 'Null' is not a 'bool' error
-                            (drink['isFavorite'] ?? false)
+                            (item['isFavorite'] ?? false)
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            color: (drink['isFavorite'] ?? false)
+                            color: (item['isFavorite'] ?? false)
                                 ? Colors.red
                                 : Colors.white,
                             shadows: const [
@@ -198,7 +198,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
-                          drink['name']!,
+                          item['name']!,
                           style: TextStyle(
                             fontFamily:
                                 'Melodrame', // This must match the 'family' name in pubspec
@@ -217,6 +217,7 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
           );
         },
       ),
+
       /*
       ListView.builder(
         itemCount: _coffeeMenu.length,
@@ -268,10 +269,13 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   }
 }
 
-Future<List<String>> getCoffeeImageUrl(String query) async {
+Future<List<String>> getCoffeeImageBatch(String query) async {
   final String api_key = Env.apiKey; // Use your actual key
+  // Notice 'per_page=10' in the URL - that's the key change!
   final response = await http.get(
-    Uri.parse('https://api.unsplash.com/search/photos?query=$query&per_page=10'),
+    Uri.parse(
+      'https://api.unsplash.com/search/photos?query=$query&per_page=10',
+    ),
     headers: {'Authorization': 'Client-ID $api_key'},
   );
 
