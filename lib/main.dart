@@ -104,24 +104,27 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   ];
 
   Future<void> _loadFullFeed() async {
-    List<Map<String, dynamic>> tempFeed = [];
+    setState(() => _isLoading = true);
+    List<Map<String, dynamic>> newItems = [];
 
     for (var drink in _coffeeMenu) {
       // Fetch 10 images for this specific drink
-      List<String> urls = await getCoffeeImageBatch(drink['name']);
+      List<String> urls = await getCoffeeImageBatch(drink['name'], _currentPage);
 
       for (var url in urls) {
-        tempFeed.add({
+        newItems.add({
           'name': drink['name'],
-          'image': url, // This is now a direct Network URL
+          'image': url, // This is now a direct Network URL,
+          'status': drink['status'],
           'isfavorite': false,
         });
       }
     }
     setState(() {
-      _flattenedFeed = tempFeed;
+      _flattenedFeed.addAll(newItems);
       _flattenedFeed
           .shuffle(); // Make it look like a real Pinterest discovery feed
+      _isLoading = false;
     });
   }
 
@@ -141,11 +144,12 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
       ),
 
       body: MasonryGridView.count(
+        controller: _scrollController,
         crossAxisCount: 4, // 2 columns like Pinterest
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         padding: const EdgeInsets.all(10),
-        itemCount: _flattenedFeed.length,
+        itemCount: _flattenedFeed.length+  (_isLoading ? 1 : 0),
         itemBuilder: (context, index) {
           final item = _flattenedFeed[index];
 
@@ -285,12 +289,12 @@ class _ScaffoldExampleState extends State<ScaffoldExample> {
   }
 }
 
-Future<List<String>> getCoffeeImageBatch(String query) async {
+Future<List<String>> getCoffeeImageBatch(String query,int page ) async {
   final String api_key = Env.apiKey; // Use your actual key
   // Notice 'per_page=10' in the URL - that's the key change!
   final response = await http.get(
     Uri.parse(
-      'https://api.unsplash.com/search/photos?query=$query&per_page=10',
+      'https://api.unsplash.com/search/photos?query=$query&per_page=10&page=$page',
     ),
     headers: {'Authorization': 'Client-ID $api_key'},
   );
