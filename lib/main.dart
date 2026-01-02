@@ -1,122 +1,377 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../env/env.dart'; // Import your Env class
 
 void main() {
-  runApp(const MyApp());
+  // starting point
+  runApp(MyApp());
+  // runApp(const ScaffoldExampleApp());
 }
 
+/*
+Scaffold Widget
+- Implements basic material design layout structure
+
+*/
+// immutable
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+    return const MaterialApp(home: ScaffoldExample());
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// immutable
+class ScaffoldExample extends StatefulWidget {
+  const ScaffoldExample({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ScaffoldExample> createState() => _ScaffoldExampleState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+// mutable
+class _ScaffoldExampleState extends State<ScaffoldExample> {
+  int _count = 0;
+  List<Map<String, dynamic>> _flattenedFeed = [];
 
-  void _incrementCounter() {
+  int _currentPage = 1;
+  bool _isLoading = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFullFeed(); // Load the first page
+
+    // Listen to scroll movements
+    _scrollController.addListener(() {
+      // If we are at 80% of the scroll height, load more!
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoading) {
+          _loadFullFeed();
+        }
+      }
+    });
+  }
+
+  final List<Map<String, dynamic>> _coffeeMenu = [
+    {
+      'name': 'Matcha Latte',
+      'image': <String>[],
+      'status': 'available',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Cortado',
+      'image': <String>[],
+      'status': 'out_of_stock',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Flat White',
+      'image': <String>[],
+      'status': 'out_of_stock',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Cappuccino',
+      'image': <String>[],
+      'status': 'available',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Espresso',
+      'image': <String>[],
+      'status': 'available',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Hot Chocolate',
+      'image': <String>[],
+      'status': 'available',
+      'isfavorite': false,
+    },
+    {
+      'name': 'Hot Latte',
+      'image': <String>[],
+      'status': 'available',
+      'isfavorite': false,
+    },
+  ];
+
+  Future<void> _loadFullFeed() async {
+    setState(() => _isLoading = true);
+    List<Map<String, dynamic>> newItems = [];
+
+    for (var drink in _coffeeMenu) {
+      // Fetch 10 images for this specific drink
+      List<String> urls = await getCoffeeImageBatch(drink['name'], _currentPage);
+
+      for (var url in urls) {
+        newItems.add({
+          'name': drink['name'],
+          'image': url, // This is now a direct Network URL,
+          'status': drink['status'],
+          'isfavorite': false,
+        });
+      }
+    }
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter--;
+      _flattenedFeed.addAll(newItems);
+      _flattenedFeed
+          .shuffle(); // Make it look like a real Pinterest discovery feed
+      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        title: const Text(
+          'Old Market Coffee',
+          style: TextStyle(
+            fontFamily:
+                'LaGrazielaScriptDemo', // This must match the 'family' name in pubspec
+            fontSize: 45,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
+
+      body: MasonryGridView.count(
+        controller: _scrollController,
+        crossAxisCount: 4, // 2 columns like Pinterest
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        padding: const EdgeInsets.all(10),
+        itemCount: _flattenedFeed.length+  (_isLoading ? 1 : 0),
+        itemBuilder: (context, index) {
+          final item = _flattenedFeed[index];
+
+          return Card(
+            clipBehavior: Clip.antiAlias, // Ensures image corners are rounded
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: InkWell(
+              // Makes the whole card tappable
+              onTap: () {
+                bool isOut = item['status'] == 'out_of_stock';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isOut
+                          ? 'Oops! ${item['name']} is out of stock.'
+                          : '${item['name']} added to cart!',
+                    ),
+                    backgroundColor: isOut
+                        ? Colors.brown[400]
+                        : Colors.pink[400],
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  Stack(
+                    /*
+                    The Stack Rule: Every widget inside a Stack is layered on top of the previous one, 
+                    starting from the top-left corner by default.
+                    */
+                    children: [
+                      Image.network(
+                        item['image'],
+                        fit: BoxFit.cover,
+                        // The masonry layout loves images of different heights!
+                      ),
+
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              // Safety: if isFavorite is null, treat it as false
+                              bool currentFav = item['isFavorite'] ?? false;
+                              item['isFavorite'] = !currentFav;
+                            });
+                          },
+                          child: Icon(
+                            // Use ?? false here to prevent the 'Null' is not a 'bool' error
+                            (item['isFavorite'] ?? false)
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: (item['isFavorite'] ?? false)
+                                ? Colors.red
+                                : Colors.white,
+                            shadows: const [
+                              Shadow(color: Colors.black54, blurRadius: 10),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          item['name']!,
+                          style: TextStyle(
+                            fontFamily:
+                                'Melodrame', // This must match the 'family' name in pubspec
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown[900],
+                          ),
+                          //style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+
+      /*
+      ListView.builder(
+        itemCount: _coffeeMenu.length,
+        itemBuilder: (context, index) {
+          final drink = _coffeeMenu[index];
+          return Card(
+            margin: const EdgeInsets.all(15),
+            child: ListTile(
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  drink['image']!,
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              title: Text(drink['name']!),
+              onTap: () {
+                bool isOut = drink['status'] == 'out_of_stock';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isOut
+                          ? 'Oops! ${drink['name']} is out of stock.'
+                          : '${drink['name']} added to cart!',
+                    ),
+                    backgroundColor: isOut
+                        ? Colors.brown[400]
+                        : Colors.pink[400],
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+      // Center(child: Text('you have selected ${_drinks[_count % _drinks.length]} ')),
+      
+      */
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: () =>
+            setState(() => _count++), // telling the class to re build
+        tooltip: 'Increment Counter',
+        child: const Icon(Icons.shopping_bag, color: Colors.brown),
       ),
     );
   }
 }
+
+Future<List<String>> getCoffeeImageBatch(String query,int page ) async {
+  final String api_key = Env.apiKey; // Use your actual key
+  // Notice 'per_page=10' in the URL - that's the key change!
+  final response = await http.get(
+    Uri.parse(
+      'https://api.unsplash.com/search/photos?query=$query&per_page=10&page=$page',
+    ),
+    headers: {'Authorization': 'Client-ID $api_key'},
+  );
+
+  if (response.statusCode == 200) {
+    var data = jsonDecode(response.body);
+    // Unsplash returns a list of results; we take the first one's 'regular' URL
+    List<String> urls = [];
+    for (var result in data['results']) {
+      urls.add(result['urls']['regular']);
+    }
+    return urls;
+  } else {
+    throw Exception('Failed to load photos from Unsplash');
+  }
+}
+
+/*
+class MyApp extends StatelessWidget {
+
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Coffee App',
+      home: Scaffold(
+        appBar: AppBar(title: Text('Old Market Cafe')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              DrinkName('Matcha Latte'),
+              SizedBox(height: 8.0),
+
+              DrinkName('Cortado'),
+              SizedBox(height: 8.0),
+
+              DrinkName('Hot Chocolate'),
+              SizedBox(height: 8.0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+*/
+/*
+Statefull UI widgets-
+- should update values from app over time.
+- stateless widget can't update its values.
+- statless is immutable
+- State methods are created for stateful widgets.
+
+Widgets are just blue prints
+Element tree are what represented on the screen
+
+*/
+
+/*
+We can make our own widget to prevent repeated coding & that's using stateless widget
+*/
+
+/*
+class DrinkName extends StatelessWidget {
+
+  final String name;
+
+  const DrinkName(this.name);
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: Colors.yellow),
+      child: Padding(
+        padding: const EdgeInsetsGeometry.all(8.0),
+        child: Text(name),
+      ),
+    );
+  }
+}
+*/

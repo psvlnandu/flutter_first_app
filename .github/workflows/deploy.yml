@@ -1,0 +1,42 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches:
+      - learn/widgets 
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # MUST BE BEFORE BUILD: Create the secret file
+      - name: Create .env file
+        run: |
+          echo "API_KEY=${{ secrets.API_KEY }}" > .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+
+      # MUST BE BEFORE BUILD: Generate the Envied code
+      - name: Generate Envied code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # THE BUILD COMMAND: Optimized for GitHub Pages
+      - name: Build Flutter web
+        run: flutter build web --release --base-href /flutter_first_app/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
