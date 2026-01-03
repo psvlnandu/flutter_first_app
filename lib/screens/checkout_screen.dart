@@ -36,9 +36,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             title: Text(cartItems[index]['name']),
             trailing: Row(
               // Use a Row to put two buttons side-by-side
+              mainAxisSize: MainAxisSize.min,
               children: [
                 // 1. Move to favs button
                 IconButton(
+                  tooltip: (item['isFavorite'] ?? false)
+                      ? "Already in favorites - delete from cart to remove"
+                      : "Move to favorites",
+                      
                   icon: Icon(
                     (item['isFavorite'] ?? false)
                         ? Icons.favorite
@@ -47,18 +52,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ? Colors.red
                         : Colors.grey,
                   ),
-                  onPressed: () {
-                    // This updates the global coffeeProvider
-                    ref.read(coffeeProvider.notifier).toggleFavorite(item);
 
-                    // Optional: Show a snackbar for feedback
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Updated Favorites!')),
-                    );
-                  },
+                  // Optional: Custom color when disab
+                  onPressed: (item['isFavorite'] ?? false)
+                      ? null
+                      : () {
+                          // This updates the global coffeeProvider
+                          ref
+                              .read(coffeeProvider.notifier)
+                              .toggleFavorite(item);
+                          // 2. Remove the item from the cart provider
+                          // Since you have the index from the ListView.builder, use it here
+                          ref.read(cartProvider.notifier).removeFromCart(index);
+                          // Optional: Show a snackbar for feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '${item['name']} moved to Favorites!',
+                              ),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
                 ),
                 // 2. Remove from cart button
                 IconButton(
+                  tooltip: "Delete from cart",
                   icon: const Icon(Icons.delete_outline_outlined),
                   onPressed: () =>
                       ref.read(cartProvider.notifier).removeFromCart(index),
