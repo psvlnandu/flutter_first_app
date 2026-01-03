@@ -152,12 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Old Market Coffee'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite),
-            onPressed: () => Navigator.pushNamed(context, '/favs'),
-          ),
-        ],
+        
       ),
 
       drawer: Drawer(
