@@ -186,7 +186,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer first
-                Navigator.pushNamed(context, '/favs');
+                
+                Navigator.pushNamed(context, '/favs', arguments: _flattenedFeed);
               },
             ),
             // Item 2: Profile (Placeholder)
