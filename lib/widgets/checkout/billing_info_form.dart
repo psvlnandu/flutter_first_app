@@ -17,9 +17,10 @@ class BillingInfoForm extends StatelessWidget {
           onChanged: onCardChanged,
           decoration: const InputDecoration(
             labelText: 'Card Number',
-            prefixIcon: Icon(Icons.credit_card),
+            // prefixIcon: Icon(Icons.credit_card),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.length != 16 ? 'Invalid Card Number' : null,
         ),
 
 

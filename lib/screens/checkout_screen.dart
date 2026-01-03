@@ -17,17 +17,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
   final _billCity = TextEditingController();
+  final _billStatte = TextEditingController();
   final _billZip = TextEditingController();
+
+  final _address01 = TextEditingController();
+  final _address02 = TextEditingController();
   final _shipCity = TextEditingController();
+  final _shipState = TextEditingController();
   final _shipZip = TextEditingController();
+
   final _cardController = TextEditingController();
   bool _sameAsBilling = false;
+
   void _handleSync(bool value) {
     setState(() {
       _sameAsBilling = value;
       if (_sameAsBilling) {
+        _address01.text = '';
+        _address02.text = '';
         _shipCity.text = _billCity.text;
+        _shipState.text = _billStatte.text;
         _shipZip.text = _billZip.text;
       }
     });
@@ -38,9 +50,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // Clean up controllers when screen is closed
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _billCity.dispose();
+    _billStatte.dispose();
     _billZip.dispose();
+    _address01.dispose();
+    _address02.dispose();
     _shipCity.dispose();
+    _shipState.dispose();
     _shipZip.dispose();
     _cardController.dispose();
     super.dispose();
@@ -51,7 +68,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       // 1. Create a "Payment Intent" (usually done via a small backend script)
       // 2. Present the Payment Sheet or confirm the card
-     
 
       ScaffoldMessenger.of(
         context,
@@ -110,12 +126,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 PersonalInfoForm(
                   nameController: _nameController,
                   emailController: _emailController,
+                  phoneController: _phoneController,
                 ),
                 const SizedBox(height: 30),
 
                 _sectionHeader("Billing Address"),
                 // I've added city/zip here so we can sync them to shipping
-                _buildAddressFields(_billCity, _billZip),
+                _buildAddressFields(_billCity, _billStatte, _billZip),
                 const SizedBox(height: 30),
 
                 _sectionHeader("Payment Details"),
@@ -143,7 +160,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ],
                 ),
-                if (!_sameAsBilling) _buildAddressFields(_shipCity, _shipZip),
+                if (!_sameAsBilling)
+                  _buildAddressFields(
+                    _shipCity,
+                    _shipState,
+                    _shipZip,
+                    address01: _address01,
+                    address02: _address02,
+                  ),
 
                 const SizedBox(height: 50),
                 SizedBox(
@@ -187,9 +211,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
+          fontFamily: 'Coolvetica',
+          // fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -198,12 +221,38 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _buildAddressFields(
     TextEditingController city,
     TextEditingController zip,
-  ) {
+    TextEditingController state, {
+    TextEditingController? address01, // Optional named parameters
+    TextEditingController? address02,
+  }) {
     return Column(
       children: [
+        // Only show address lines if the controllers are passed in
+        if (address01 != null) ...[
+          TextFormField(
+            controller: address01,
+            decoration: const InputDecoration(
+              labelText: "Street, Building, Unit",
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (address02 != null) ...[
+          TextFormField(
+            controller: address02,
+            decoration: const InputDecoration(labelText: "Apt No, Unit, Suite"),
+          ),
+          const SizedBox(height: 10),
+        ],
         TextFormField(
           controller: city,
           decoration: const InputDecoration(labelText: "City"),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: state,
+          decoration: const InputDecoration(labelText: "State"),
+          keyboardType: TextInputType.text,
         ),
         const SizedBox(height: 10),
         TextFormField(

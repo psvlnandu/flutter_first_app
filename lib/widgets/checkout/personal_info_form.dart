@@ -8,8 +8,9 @@ This way, the Parent (CheckoutScreen) still owns the data, but the Child (the Fo
 class PersonalInfoForm extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController emailController;
+  final TextEditingController phoneController;
 
-  const PersonalInfoForm({super.key, required this.nameController, required this.emailController});
+  const PersonalInfoForm({super.key, required this.nameController, required this.emailController, required this.phoneController});
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +24,12 @@ class PersonalInfoForm extends StatelessWidget {
         TextFormField(
           controller: emailController,
           decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email)),
+          validator: (value) => value!.isEmpty ? 'Email required' : null,
+        ),
+        TextFormField(
+          controller: phoneController,
+          decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone)),
+          validator: (value) => value!.isEmpty ? 'Phone required' : null,
         ),
       ],
     );
