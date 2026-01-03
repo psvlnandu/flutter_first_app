@@ -151,10 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Old Market Coffee',
-          style: TextStyle(fontFamily: 'Melodrame'),
-        ),
+        title: const Text('Old Market Coffee'),
         actions: [
           IconButton(
             icon: const Icon(Icons.favorite),

@@ -18,7 +18,6 @@ class MyApp extends StatelessWidget {
         colorSchemeSeed: Colors.brown,
         fontFamily: 'Melodrame',
         appBarTheme: const AppBarTheme(
-          centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
           // This specifically overrides the AppBar title font
