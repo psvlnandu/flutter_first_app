@@ -16,7 +16,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.brown,
-        fontFamily: 'LaGrazielaScriptDemo', // Now the whole app uses your font!
+        fontFamily: 'Melodrame',
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          // This specifically overrides the AppBar title font
+          titleTextStyle: TextStyle(
+            fontFamily: 'LaGrazielaScriptDemo',
+            fontSize: 36, // Adjust for that "Cute" script look
+            fontWeight: FontWeight.bold,
+            color: Colors.brown,
+          ),
+        ),
       ),
       initialRoute: '/',
       routes: {
