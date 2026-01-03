@@ -1,19 +1,22 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../env/env.dart'; // Import your Env class
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -103,8 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
     },
   ];
 
-  List<Map<String, dynamic>> _flattenedFeed = [];
-
   int _currentPage = 1;
 
   bool _isLoading = false;
@@ -114,46 +115,48 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadFullFeed() async {
     setState(() => _isLoading = true);
     List<Map<String, dynamic>> newItems = [];
+
     for (var drink in _coffeeMenu) {
-      // Fetch 10 images for this specific drink
       List<String> urls = await getCoffeeImageBatch(
         drink['name'],
         _currentPage,
       );
-
       for (var url in urls) {
         newItems.add({
           'name': drink['name'],
-
-          'image': url, // This is now a direct Network URL,
-
+          'image': url,
           'status': drink['status'],
-
-          'isfavorite': false,
+          'isFavorite': false, // Match the casing in your provider!
         });
       }
     }
 
-    setState(() {
-      _flattenedFeed.addAll(newItems);
+    // UPDATED: Push to Riverpod instead of local list
+    if (_currentPage == 1) {
+      ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
+    } else {
+      ref.read(coffeeProvider.notifier).addItems(newItems..shuffle());
+    }
 
-      _flattenedFeed
-          .shuffle(); // Make it look like a real Pinterest discovery feed
-
-      _isLoading = false;
-    });
+    _currentPage++;
+    setState(() => _isLoading = false);
   }
 
   // ... Paste your lists, scroll controller, and _loadFullFeed here ...
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
+  void _addToCart(Map<String, dynamic> item) {
+    // We will build a cartProvider for this soon!
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${item['name']} added!')));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final coffeeFeed = ref.watch(coffeeProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Old Market Coffee'),
-        
-      ),
+      appBar: AppBar(title: const Text('Old Market Coffee')),
 
       drawer: Drawer(
         child: ListView(
@@ -182,12 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text(
                 'Favorites',
                 style: TextStyle(fontFamily: 'Melodrame', fontSize: 24),
-                
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer first
-                
-                Navigator.pushNamed(context, '/favs', arguments: _flattenedFeed);
+
+                Navigator.pushNamed(context, '/favs');
               },
             ),
             // Item 2: Profile (Placeholder)
@@ -195,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
               leading: const Icon(Icons.person, color: Colors.brown),
               title: const Text(
                 'Profile',
-                style: TextStyle(fontFamily: 'Melodrame',fontSize: 24),
+                style: TextStyle(fontFamily: 'Melodrame', fontSize: 24),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -228,17 +230,16 @@ class _HomeScreenState extends State<HomeScreen> {
             child: MasonryGridView.count(
               controller: _scrollController,
               crossAxisCount: 4, // Change to 2 for better mobile visibility
-              itemCount: _flattenedFeed.length + (_isLoading ? 1 : 0),
+              itemCount: coffeeFeed.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index == _flattenedFeed.length)
+                if (index == coffeeFeed.length)
                   return const CircularProgressIndicator();
-                final item = _flattenedFeed[index];
+                final item = coffeeFeed[index];
                 return CoffeeCard(
                   item: item,
-                  onToggleFavorite: () => setState(
-                    () => item['isFavorite'] = !(item['isFavorite'] ?? false),
-                  ),
-                  onAddToCart: () => setState(() => _cart.add(item)),
+                  onToggleFavorite: () =>
+                      ref.read(coffeeProvider.notifier).toggleFavorite(item),
+                  onAddToCart: () => _addToCart(item),
                 );
               },
             ),
