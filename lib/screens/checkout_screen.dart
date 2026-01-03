@@ -4,7 +4,6 @@ import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/widgets/checkout/billing_info_form.dart';
 import 'package:flutter_application_1/widgets/checkout/personal_info_form.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -52,10 +51,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     try {
       // 1. Create a "Payment Intent" (usually done via a small backend script)
       // 2. Present the Payment Sheet or confirm the card
-      await Stripe.instance.confirmPayment(
-        paymentIntentClientSecret: 'pi_test_secret_from_backend',
-        data: PaymentMethodParams.card(paymentMethodData: PaymentMethodData()),
-      );
+     
 
       ScaffoldMessenger.of(
         context,
@@ -106,7 +102,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 vertical: 20,
               ),
               children: [
-                
                 _sectionHeader("Your Order"),
                 _buildCartSummary(cartItems),
                 const Divider(height: 60),
@@ -130,7 +125,53 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _sectionHeader("Shipping Address"),
+                    Row(
+                      children: [
+                        const Text(
+                          "Same as billing?",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        Checkbox(
+                          value: _sameAsBilling,
+                          onChanged: (val) => _handleSync(val ?? false),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (!_sameAsBilling) _buildAddressFields(_shipCity, _shipZip),
+
+                const SizedBox(height: 50),
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        // Payment logic
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          Colors.black, // High contrast like gymshark
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      "PLACE ORDER",
+                      style: TextStyle(
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ], //children
             ),
           ),

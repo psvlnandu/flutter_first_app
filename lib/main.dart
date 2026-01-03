@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'screens/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
@@ -8,9 +7,9 @@ import 'env/env.dart';
 void main()async{
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Stripe with your TEST KEY
-  Stripe.publishableKey = Env.pktest;
-  await Stripe.instance.applySettings();
+  // // Initialize Stripe with your TEST KEY
+  // Stripe.publishableKey = Env.pktest;
+  // await Stripe.instance.applySettings();
 
   runApp(
     const ProviderScope(

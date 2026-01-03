@@ -1,6 +1,5 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
@@ -143,7 +142,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     setState(() => _isLoading = false);
   }
 
-  // ... Paste your lists, scroll controller, and _loadFullFeed here ...
+
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
   void _addToCart(Map<String, dynamic> item) {
