@@ -1,6 +1,7 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -146,7 +147,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
   void _addToCart(Map<String, dynamic> item) {
-    // We will build a cartProvider for this soon!
+    // Use ref.read for one-time actions like button clicks
+    ref.read(cartProvider.notifier).addToCart(item);
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('${item['name']} added!')));
@@ -155,6 +158,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final coffeeFeed = ref.watch(coffeeProvider);
+    final cart = ref.watch(cartProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Old Market Coffee')),
 
@@ -248,7 +252,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       // NEW: DragTarget for the Cart!
       floatingActionButton: DragTarget<Map<String, dynamic>>(
-        onAccept: (item) => setState(() => _cart.add(item)),
+        onAccept: (item) => ref.read(cartProvider.notifier).addToCart(item),
         builder: (context, candidateData, rejectedData) {
           // Check if an item is currently hovering over the cart
           bool isHovering = candidateData.isNotEmpty;
@@ -257,9 +261,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             scale: isHovering ? 1.2 : 1.0, // Scale up when hovering!
             child: FloatingActionButton(
               onPressed: () =>
-                  Navigator.pushNamed(context, '/checkout', arguments: _cart),
+                  Navigator.pushNamed(context, '/checkout'),
               child: Badge(
-                label: Text('${_cart.length}'),
+                label: Text('${cart.length}'),
                 child: const Icon(Icons.shopping_bag),
               ),
             ),

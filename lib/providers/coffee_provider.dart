@@ -1,6 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // This manages the List of Coffee Maps
+/*
+The coffeeProvider manages the Product Catalog (fetching from Unsplash), 
+while the cartProvider manages User Selection.
+
+*/
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   CoffeeNotifier() : super([]);
 
