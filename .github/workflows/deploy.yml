@@ -3,7 +3,8 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches:
-      - learn/widgets 
+      # - learn/widgets
+      - main
 
 jobs:
   build_and_deploy:
