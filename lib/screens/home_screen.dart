@@ -202,12 +202,18 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: DragTarget<Map<String, dynamic>>(
         onAccept: (item) => setState(() => _cart.add(item)),
         builder: (context, candidateData, rejectedData) {
-          return FloatingActionButton(
-            onPressed: () =>
-                Navigator.pushNamed(context, '/checkout', arguments: _cart),
-            child: Badge(
-              label: Text('${_cart.length}'),
-              child: const Icon(Icons.shopping_bag),
+          // Check if an item is currently hovering over the cart
+          bool isHovering = candidateData.isNotEmpty;
+          // the candidateData parameter in your builder—it tells you if someone is currently holding a drink over the cart.
+          return Transform.scale(
+            scale: isHovering ? 1.2 : 1.0, // Scale up when hovering!
+            child: FloatingActionButton(
+              onPressed: () =>
+                  Navigator.pushNamed(context, '/checkout', arguments: _cart),
+              child: Badge(
+                label: Text('${_cart.length}'),
+                child: const Icon(Icons.shopping_bag),
+              ),
             ),
           );
         },
