@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
 import 'screens/checkout_screen.dart';
 
-void main() => runApp(const MyApp());
+void main() => runApp(
+  const ProviderScope(
+    // This enables Riverpod for the whole app
+    child: MyApp(),
+  ),
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

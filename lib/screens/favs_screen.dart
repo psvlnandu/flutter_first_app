@@ -9,7 +9,7 @@ class FavsScreen extends StatefulWidget {
   State<FavsScreen> createState() => _FavsScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _FavsScreenState extends State<FavsScreen> {
   @override
   Widget build(BuildContext context) {
     // 1. Catch the full feed from HomeScreen arguments
