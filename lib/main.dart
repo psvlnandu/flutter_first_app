@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomeScreen(),
         // '/favs': (context) => const FavsScreen(),
-        // '/checkout': (context) => const CheckoutScreen(),
+        '/checkout': (context) => const CheckoutScreen(),
       },
     );
   }

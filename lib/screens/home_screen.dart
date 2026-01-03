@@ -159,6 +159,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.all(2.0),
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.brown),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Coffee Explorer',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontFamily: 'Melodrame',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Item 1: Favorites
+            ListTile(
+              leading: const Icon(Icons.favorite, color: Colors.brown),
+              title: const Text(
+                'Favorites',
+                style: TextStyle(fontFamily: 'Melodrame', fontSize: 24),
+                
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer first
+                Navigator.pushNamed(context, '/favs');
+              },
+            ),
+            // Item 2: Profile (Placeholder)
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.brown),
+              title: const Text(
+                'Profile',
+                style: TextStyle(fontFamily: 'Melodrame',fontSize: 24),
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                // We'll set this up later!
+              },
+            ),
+          ],
+        ),
+      ),
+
       body: Column(
         children: [
           // AI Search Bar Placeholder
