@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
+import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
+
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     /*
     SOL01- 
@@ -23,20 +25,48 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     SOL02-
     Instead of catching now, we are using Provider hence the "ref"
     */
-    
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
       body: ListView.builder(
         itemCount: cartItems.length,
-        itemBuilder: (context, index) => ListTile(
-          title: Text(cartItems[index]['name']),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () =>
-                ref.read(cartProvider.notifier).removeFromCart(index),
-          ),
-        ),
+        itemBuilder: (context, index) {
+          final item = cartItems[index];
+          return ListTile(
+            title: Text(cartItems[index]['name']),
+            trailing: Row(
+              // Use a Row to put two buttons side-by-side
+              children: [
+                // 1. Move to favs button
+                IconButton(
+                  icon: Icon(
+                    (item['isFavorite'] ?? false)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: (item['isFavorite'] ?? false)
+                        ? Colors.red
+                        : Colors.grey,
+                  ),
+                  onPressed: () {
+                    // This updates the global coffeeProvider
+                    ref.read(coffeeProvider.notifier).toggleFavorite(item);
+
+                    // Optional: Show a snackbar for feedback
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Updated Favorites!')),
+                    );
+                  },
+                ),
+                // 2. Remove from cart button
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_outlined),
+                  onPressed: () =>
+                      ref.read(cartProvider.notifier).removeFromCart(index),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
