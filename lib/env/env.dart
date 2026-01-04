@@ -9,13 +9,19 @@ dart run build_runner build --delete-conflicting-outputs
 */
 @Envied(path: './.env')
 abstract class Env {
+  // Unplash API_KEY & SECRET KEY
   @EnviedField(varName: 'API_KEY', obfuscate: true) // Obfuscate for security
   static final String apiKey = _Env.apiKey;
 
   @EnviedField(varName: 'SECRET_KEY')
   static final String secretKey = _Env.secretKey;
 
-  
+  // Stripe- not being used for now
   @EnviedField(varName: 'PK_TEST', obfuscate: true)
   static final String pktest = _Env.pktest;
+
+  // Google Cloud Console
+  @EnviedField(varName: 'GOOGLE_API_KEY', obfuscate: true)
+  static final String googleapikey = _Env.googleapikey;
+
 }
