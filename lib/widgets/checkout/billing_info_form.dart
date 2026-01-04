@@ -20,7 +20,7 @@ class BillingInfoForm extends StatelessWidget {
             // prefixIcon: Icon(Icons.credit_card),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.length != 16 ? 'Invalid Card Number' : null,
+          // validator: (value) => value!.length != 16 ? 'Invalid Card Number' : null,
         ),
 
 
@@ -31,7 +31,7 @@ class BillingInfoForm extends StatelessWidget {
             labelText: 'CVV',
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.length != 3 ? 'Invalid CVV' : null,
+          // validator: (value) => value!.length != 3 ? 'Invalid CVV' : null,
         ),
 
 
@@ -42,7 +42,7 @@ class BillingInfoForm extends StatelessWidget {
             labelText: 'MM/YY ',
           ),
           keyboardType: TextInputType.text,
-          validator: (value) => value!.length != 4 ? 'Invalid Expiry' : null,
+          // validator: (value) => value!.length != 4 ? 'Invalid Expiry' : null,
         ),
         // Add CVV and Expiry here...
       ],
