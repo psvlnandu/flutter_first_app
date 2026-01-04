@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
+import 'package:flutter_application_1/services/address_service.dart';
 import 'package:flutter_application_1/widgets/checkout/billing_info_form.dart';
 import 'package:flutter_application_1/widgets/checkout/personal_info_form.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,6 +79,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
   // End of Payment
+
+  void _showAddressCheck(String original, String preferred) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          "Verify Shipping Address",
+          style: TextStyle(fontFamily: 'Coolvetica'),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "You entered:",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(original),
+            const SizedBox(height: 15),
+            const Text(
+              "Suggested (Preferred):",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            Text(preferred),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _processPayment(); // Keep original
+            },
+            child: const Text(
+              "KEEP ORIGINAL",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+            onPressed: () {
+              // Update fields with Google's data
+              setState(() {
+                _address01.text = preferred.split(',')[0];
+                // Note: You may need more complex parsing to split City/State perfectly
+              });
+              Navigator.pop(context);
+              _processPayment(); // Use preferred
+            },
+            child: const Text("USE PREFERRED"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,9 +232,37 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
                         // Payment logic
+                        // 1. Show a loading indicator
+                        showDialog(
+                          context: context,
+                          builder: (c) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
+
+                        // 2. Call Google API
+                        String? preferred =
+                            await AddressService.validateAddress(
+                              address1: _address01.text,
+                              city: _shipCity.text,
+                              state: _shipState.text,
+                              zip: _shipZip.text,
+                            );
+                        if (!mounted) return;
+                        Navigator.pop(context); // Remove loading indicator
+
+                        String original =
+                            "${_address01.text}, ${_shipCity.text}, ${_shipZip.text}";
+
+                        if (preferred != null && preferred != original) {
+                          // 3. Show the comparison if they don't match exactly
+                          _showAddressCheck(original, preferred);
+                        } else {
+                          // 4. Proceed if it's already perfect
+                          _processPayment();
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
