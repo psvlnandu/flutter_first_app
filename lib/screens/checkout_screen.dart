@@ -243,9 +243,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         );
 
                         // 2. Call Google API
-                        String? preferred =
+                        AddressValidationResult? preferred =
                             await AddressService.validateAddress(
                               address1: _address01.text,
+                              address2: _address02.text,
                               city: _shipCity.text,
                               state: _shipState.text,
                               zip: _shipZip.text,
@@ -258,7 +259,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                         if (preferred != null && preferred != original) {
                           // 3. Show the comparison if they don't match exactly
-                          _showAddressCheck(original, preferred);
+                          // _showAddressCheck(original, preferred);
                         } else {
                           // 4. Proceed if it's already perfect
                           _processPayment();
@@ -313,16 +314,75 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }) {
     return Column(
       children: [
-        // Only show address lines if the controllers are passed in
-        if (address01 != null) ...[
-          TextFormField(
-            controller: address01,
-            decoration: const InputDecoration(
-              labelText: "Street, Building, Unit",
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
+        // 1. Only render Autocomplete if address01 is actually provided
+      if (address01 != null) ...[
+        Autocomplete<Map<String, dynamic>>( // Fix: Use Map instead of dynamic
+          optionsBuilder: (TextEditingValue textEditingValue) async {
+            if (textEditingValue.text.length < 3) return const Iterable.empty();
+            final results = await AddressService.getAutocompletePredictions(
+              textEditingValue.text,
+            );
+            // Ensure we return an Iterable of Maps
+            return List<Map<String, dynamic>>.from(results);
+          },
+          displayStringForOption: (option) => option['description'] ?? '',
+          onSelected: (selection) async {
+            _fillAddressFromPlaceId(selection['place_id']);
+          },
+          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+            // Fix: Syncing controllers with null-safety
+            if (address01.text.isNotEmpty && controller.text.isEmpty) {
+              controller.text = address01.text;
+            }
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              decoration: const InputDecoration(
+                labelText: "Street, Building, Unit",
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+              // Fix: Null check before assigning text
+              onChanged: (val) => address01.text = val, 
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200, maxWidth: 552),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return ListTile(
+                        title: Text(
+                          option['description'] ?? '',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+      ],
+        // // Only show address lines if the controllers are passed in
+        // if (address01 != null) ...[
+        //   TextFormField(
+        //     controller: address01,
+        //     decoration: const InputDecoration(
+        //       labelText: "Street, Building, Unit",
+        //     ),
+        //   ),
+        //   const SizedBox(height: 10),
+        // ],
         if (address02 != null) ...[
           TextFormField(
             controller: address02,
@@ -408,5 +468,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         );
       }).toList(),
     );
+  }
+
+  void _fillAddressFromPlaceId(String placeId) async {
+    await AddressService.fetchPlaceDetails(
+      placeId,
+      address1: _address01,
+      city: _shipCity,
+      state: _shipState,
+      zip: _shipZip,
+    );
+    setState(() {}); // Refresh UI to show the new auto-filled values
   }
 }
