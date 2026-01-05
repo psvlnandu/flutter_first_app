@@ -55,9 +55,7 @@ class AddressService {
     required String state,
     required String zip,
   }) async {
-    final url = Uri.parse(
-      'https://addressvalidation.googleapis.com/v1:validateAddress?key=${Env.googleapikey}',
-    );
+    final url = Uri.parse('http://127.0.0.1:3000/api/validate-address');
     // Combine address lines into the list
     final List<String> addressLines = [address1];
     if (address2 != null && address2.isNotEmpty) {
@@ -112,13 +110,17 @@ class AddressService {
     if (input.isEmpty) return [];
     if (_sessionToken.isEmpty) initializeSessionToken();
 
+    // final url = Uri.parse(
+    //   // 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+    //   'http://127.0.0.1:3000/api/autocomplete'
+    //   '?input=${Uri.encodeComponent(input)}'
+    //   '&key=${Env.googleapikey}'
+    //   '&sessiontoken=$_sessionToken'
+    //   '&components=country:us'
+    //   '&language=en',
+    // );
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=$input'
-      '&key=${Env.googleapikey}'
-      '&sessiontoken=$_sessionToken'
-      '&components=country:us'
-      '&language=en',
+      'http://127.0.0.1:3000/api/autocomplete?input=${Uri.encodeComponent(input)}&sessionToken=$_sessionToken',
     );
 
     try {
@@ -152,12 +154,15 @@ class AddressService {
     required TextEditingController zip,
     TextEditingController? address2,
   }) async {
+    // final url = Uri.parse(
+    //   'https://maps.googleapis.com/maps/api/place/details/json'
+    //   '?place_id=$placeId'
+    //   '&key=${Env.googleapikey}'
+    //   '&sessiontoken=$_sessionToken'
+    //   '&fields=address_components',
+    // );
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/details/json'
-      '?place_id=$placeId'
-      '&key=${Env.googleapikey}'
-      '&sessiontoken=$_sessionToken'
-      '&fields=address_components',
+      'http://127.0.0.1:3000/api/place-details?placeId=$placeId&sessionToken=$_sessionToken',
     );
 
     try {
