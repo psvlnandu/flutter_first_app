@@ -20,15 +20,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
+  final _billAddress01 = TextEditingController();
+  final _billAddress02 = TextEditingController();
   final _billCity = TextEditingController();
-  final _billStatte = TextEditingController();
+  final _billState = TextEditingController();
   final _billZip = TextEditingController();
 
-  final _address01 = TextEditingController();
-  final _address02 = TextEditingController();
+  final _shipAddress01 = TextEditingController();
+  final _shipAddress02 = TextEditingController();
   final _shipCity = TextEditingController();
   final _shipState = TextEditingController();
   final _shipZip = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    AddressService.initializeSessionToken();
+  }
 
   final _cardController = TextEditingController();
   bool _sameAsBilling = false;
@@ -37,11 +45,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() {
       _sameAsBilling = value;
       if (_sameAsBilling) {
-        _address01.text = '';
-        _address02.text = '';
+        _shipAddress01.text = _billAddress01.text;
+        _shipAddress02.text = _billAddress02.text;
         _shipCity.text = _billCity.text;
-        _shipState.text = _billStatte.text;
+        _shipState.text = _billState.text;
         _shipZip.text = _billZip.text;
+      } else {
+        _shipAddress01.clear();
+        _shipAddress02.clear();
+        _shipCity.clear();
+        _shipState.clear();
+        _shipZip.clear();
       }
     });
   }
@@ -52,11 +66,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+
+    _billAddress01.dispose();
+    _billAddress02.dispose();
     _billCity.dispose();
-    _billStatte.dispose();
+    _billState.dispose();
     _billZip.dispose();
-    _address01.dispose();
-    _address02.dispose();
+
+    _shipAddress01.dispose();
+    _shipAddress02.dispose();
     _shipCity.dispose();
     _shipState.dispose();
     _shipZip.dispose();
@@ -124,7 +142,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             onPressed: () {
               // Update fields with Google's data
               setState(() {
-                _address01.text = preferred.split(',')[0];
+                _shipAddress01.text = preferred.split(',')[0];
                 // Note: You may need more complex parsing to split City/State perfectly
               });
               Navigator.pop(context);
@@ -190,7 +208,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                 _sectionHeader("Billing Address"),
                 // I've added city/zip here so we can sync them to shipping
-                _buildAddressFields(_billCity, _billStatte, _billZip),
+                _buildAddressFields(
+                  address01: _billAddress01,
+                  address02: _billAddress02,
+                  city: _billCity,
+                  state: _billState,
+                  zip: _billZip,
+                  label: "Billing",
+                ),
                 const SizedBox(height: 30),
 
                 _sectionHeader("Payment Details"),
@@ -220,11 +245,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 if (!_sameAsBilling)
                   _buildAddressFields(
-                    _shipCity,
-                    _shipState,
-                    _shipZip,
-                    address01: _address01,
-                    address02: _address02,
+                    address01: _shipAddress01,
+                    address02: _shipAddress02,
+                    city: _shipCity,
+                    state: _shipState,
+                    zip: _shipZip,
+                    label: "Shipping",
                   ),
 
                 const SizedBox(height: 50),
@@ -234,38 +260,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        // Payment logic
-                        // 1. Show a loading indicator
                         showDialog(
                           context: context,
                           builder: (c) =>
                               const Center(child: CircularProgressIndicator()),
                         );
 
-                        // 2. Call Google API
-                        AddressValidationResult? preferred =
+                        AddressValidationResult? result =
                             await AddressService.validateAddress(
-                              address1: _address01.text,
-                              address2: _address02.text,
+                              address1: _shipAddress01.text,
+                              address2: _shipAddress02.text,
                               city: _shipCity.text,
                               state: _shipState.text,
                               zip: _shipZip.text,
                             );
+
                         if (!mounted) return;
-                        Navigator.pop(context); // Remove loading indicator
+                        Navigator.pop(context);
 
-                        String original =
-                            "${_address01.text}, ${_shipCity.text}, ${_shipZip.text}";
-
-                        if (preferred != null && preferred != original) {
-                          // 3. Show the comparison if they don't match exactly
-                          // _showAddressCheck(original, preferred);
+                        if (result != null && result.isIncomplete) {
+                          String original =
+                              "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
+                          String preferred = result.formattedAddress;
+                          _showAddressCheck(original, preferred);
                         } else {
-                          // 4. Proceed if it's already perfect
                           _processPayment();
                         }
                       }
                     },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           Colors.black, // High contrast like gymshark
@@ -305,44 +328,55 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _buildAddressFields(
-    TextEditingController city,
-    TextEditingController zip,
-    TextEditingController state, {
-    TextEditingController? address01, // Optional named parameters
-    TextEditingController? address02,
+  Widget _buildAddressFields({
+    required TextEditingController address01,
+    required TextEditingController address02,
+    required TextEditingController city,
+    required TextEditingController state,
+    required TextEditingController zip,
+    required String label,
   }) {
     return Column(
       children: [
-        // 1. Only render Autocomplete if address01 is actually provided
-      if (address01 != null) ...[
-        Autocomplete<Map<String, dynamic>>( // Fix: Use Map instead of dynamic
+        // AUTOCOMPLETE FIELD
+        Autocomplete<AddressAutocompleteOption>(
           optionsBuilder: (TextEditingValue textEditingValue) async {
-            if (textEditingValue.text.length < 3) return const Iterable.empty();
+            if (textEditingValue.text.length < 3) {
+              return const Iterable.empty();
+            }
             final results = await AddressService.getAutocompletePredictions(
               textEditingValue.text,
             );
-            // Ensure we return an Iterable of Maps
-            return List<Map<String, dynamic>>.from(results);
+            return results;
           },
-          displayStringForOption: (option) => option['description'] ?? '',
+          displayStringForOption: (option) => option.description,
           onSelected: (selection) async {
-            _fillAddressFromPlaceId(selection['place_id']);
+            await AddressService.fetchPlaceDetails(
+              selection.placeId,
+              address1: address01,
+              address2: address02,
+              city: city,
+              state: state,
+              zip: zip,
+            );
+            setState(() {});
           },
           fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-            // Fix: Syncing controllers with null-safety
-            if (address01.text.isNotEmpty && controller.text.isEmpty) {
-              controller.text = address01.text;
-            }
             return TextFormField(
               controller: controller,
               focusNode: focusNode,
-              decoration: const InputDecoration(
-                labelText: "Street, Building, Unit",
-                prefixIcon: Icon(Icons.location_on_outlined),
+              decoration: InputDecoration(
+                labelText: "$label Address Line 1",
+                prefixIcon: const Icon(Icons.location_on_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              // Fix: Null check before assigning text
-              onChanged: (val) => address01.text = val, 
+              onChanged: (val) {
+                address01.text = val;
+              },
+              validator: (value) =>
+                  value?.isEmpty ?? true ? "Address is required" : null,
             );
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -350,17 +384,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               alignment: Alignment.topLeft,
               child: Material(
                 elevation: 4,
+                borderRadius: BorderRadius.circular(8),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200, maxWidth: 552),
+                  constraints: const BoxConstraints(
+                    maxHeight: 250,
+                    maxWidth: 552,
+                  ),
                   child: ListView.builder(
                     padding: EdgeInsets.zero,
                     itemCount: options.length,
                     itemBuilder: (context, index) {
                       final option = options.elementAt(index);
                       return ListTile(
+                        leading: const Icon(Icons.location_on),
                         title: Text(
-                          option['description'] ?? '',
-                          style: const TextStyle(fontSize: 13),
+                          option.mainText,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          option.secondaryText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                         onTap: () => onSelected(option),
                       );
@@ -371,40 +417,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             );
           },
         ),
-        const SizedBox(height: 10),
-      ],
-        // // Only show address lines if the controllers are passed in
-        // if (address01 != null) ...[
-        //   TextFormField(
-        //     controller: address01,
-        //     decoration: const InputDecoration(
-        //       labelText: "Street, Building, Unit",
-        //     ),
-        //   ),
-        //   const SizedBox(height: 10),
-        // ],
-        if (address02 != null) ...[
-          TextFormField(
-            controller: address02,
-            decoration: const InputDecoration(labelText: "Apt No, Unit, Suite"),
+        const SizedBox(height: 16),
+
+        // ADDRESS LINE 2
+        TextFormField(
+          controller: address02,
+          decoration: InputDecoration(
+            labelText: "$label Address Line 2 (Apt, Suite, etc)",
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          const SizedBox(height: 10),
-        ],
-        TextFormField(
-          controller: city,
-          decoration: const InputDecoration(labelText: "City"),
         ),
-        const SizedBox(height: 10),
-        TextFormField(
-          controller: state,
-          decoration: const InputDecoration(labelText: "State"),
-          keyboardType: TextInputType.text,
+        const SizedBox(height: 16),
+
+        // CITY & STATE ROW
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: city,
+                decoration: InputDecoration(
+                  labelText: "City",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? "City is required" : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 100,
+              child: TextFormField(
+                controller: state,
+                decoration: InputDecoration(
+                  labelText: "State",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? "State is required" : null,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
+
+        // ZIP CODE
         TextFormField(
           controller: zip,
-          decoration: const InputDecoration(labelText: "Zip Code"),
+          decoration: InputDecoration(
+            labelText: "Zip Code",
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
           keyboardType: TextInputType.number,
+          validator: (value) =>
+              value?.isEmpty ?? true ? "Zip code is required" : null,
         ),
       ],
     );
@@ -473,7 +542,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _fillAddressFromPlaceId(String placeId) async {
     await AddressService.fetchPlaceDetails(
       placeId,
-      address1: _address01,
+      address1: _shipAddress01,
       city: _shipCity,
       state: _shipState,
       zip: _shipZip,

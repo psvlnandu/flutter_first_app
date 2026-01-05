@@ -8,17 +8,46 @@ class AddressValidationResult {
   final Map<String, String> parsedAddress;
   final String formattedAddress;
   final bool isSuspicious;
-  final bool isInComplete;
+  final bool isIncomplete;
 
   AddressValidationResult({
     required this.parsedAddress,
     required this.formattedAddress,
     required this.isSuspicious,
-    required this.isInComplete,
+    required this.isIncomplete,
   });
 }
 
+class AddressAutocompleteOption {
+  final String description;
+  final String placeId;
+  final String mainText;
+  final String secondaryText;
+
+  AddressAutocompleteOption({
+    required this.description,
+    required this.placeId,
+    required this.mainText,
+    required this.secondaryText,
+  });
+  factory AddressAutocompleteOption.fromJson(Map<String, dynamic> json) {
+    return AddressAutocompleteOption(
+      description: json['description'] ?? '',
+      placeId: json['place_id'] ?? '',
+      mainText: json['structured_formatting']?['main_text'] ?? '',
+      secondaryText: json['structured_formatting']?['secondary_text'] ?? '',
+    );
+  }
+}
+
 class AddressService {
+  // Store session token for the autocomplete session
+  static String _sessionToken = '';
+
+  static void initializeSessionToken() {
+    _sessionToken = DateTime.now().millisecondsSinceEpoch.toString();
+  }
+
   static Future<AddressValidationResult?> validateAddress({
     required String address1,
     String? address2,
@@ -68,7 +97,7 @@ class AddressService {
           parsedAddress: parsed,
           formattedAddress: data['result']['address']['formattedAddress'] ?? '',
           isSuspicious: isSuspicious,
-          isInComplete: isIncomplete,
+          isIncomplete: isIncomplete,
         );
       }
     } catch (e) {
@@ -77,61 +106,100 @@ class AddressService {
     return null;
   }
 
+  static Future<List<AddressAutocompleteOption>> getAutocompletePredictions(
+    String input,
+  ) async {
+    if (input.isEmpty) return [];
+    if (_sessionToken.isEmpty) initializeSessionToken();
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      '?input=$input'
+      '&key=${Env.googleapikey}'
+      '&sessiontoken=$_sessionToken'
+      '&components=country:us'
+      '&language=en',
+    );
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint(
+          'Autocomplete response: ${data['predictions'].length} results',
+        );
+
+        final predictions = (data['predictions'] as List)
+            .map((p) => AddressAutocompleteOption.fromJson(p))
+            .toList();
+
+        return predictions;
+      } else {
+        debugPrint('Autocomplete API error: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Autocomplete Error: $e');
+    }
+    return [];
+  }
+
   static Future<void> fetchPlaceDetails(
     String placeId, {
     required TextEditingController address1,
     required TextEditingController city,
     required TextEditingController state,
     required TextEditingController zip,
+    TextEditingController? address2,
   }) async {
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=${Env.googleapikey}',
-    );
-
-    final response = await http.get(url);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body)['result'];
-      final components = data['address_components'] as List;
-
-      // Logic to map components to your controllers
-      for (var comp in components) {
-        final types = comp['types'] as List;
-        final value = comp['short_name'];
-
-        if (types.contains('street_number')) address1.text = value;
-        if (types.contains('route')) address1.text += ' ${value}';
-        if (types.contains('locality')) city.text = value;
-        if (types.contains('administrative_area_level_1')) state.text = value;
-        if (types.contains('postal_code')) zip.text = value;
-      }
-    }
-  }
-
-  static Future<List<dynamic>> getAutocompletePredictions(String input) async {
-    // sessiontoken is a unique ID for each "typing session" to save money on API credits
-    final String sessionToken = 'session_123456';
-
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=$input'
+      'https://maps.googleapis.com/maps/api/place/details/json'
+      '?place_id=$placeId'
       '&key=${Env.googleapikey}'
-      '&sessiontoken=$sessionToken',
+      '&sessiontoken=$_sessionToken'
+      '&fields=address_components',
     );
 
-    final response = await http.get(url);
+    try {
+      final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      debugPrint('Autocomplete_data:$data');
-      // // DEBUG PRINT: This will show the corrected names
-      // debugPrint('AUTOCOMPLETE PREDICTIONS for "$input":');
-      // for (var prediction in data['predictions']) {
-      //   debugPrint(' - Suggestion: ${prediction['description']}');
-      //   debugPrint(' - Place ID: ${prediction['place_id']}');
-      // }
-      return data['predictions'];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['result'];
+        final components = data['address_components'] as List;
+
+        String streetNumber = '';
+        String route = '';
+
+        for (var comp in components) {
+          final types = comp['types'] as List;
+          final shortName = comp['short_name'];
+          final longName = comp['long_name'];
+
+          if (types.contains('street_number')) {
+            streetNumber = shortName;
+          } else if (types.contains('route')) {
+            route = longName;
+          } else if (types.contains('locality')) {
+            city.text = longName;
+          } else if (types.contains('administrative_area_level_1')) {
+            state.text = shortName;
+          } else if (types.contains('postal_code')) {
+            zip.text = shortName;
+          }
+        }
+
+        // Combine street number and route properly
+        if (streetNumber.isNotEmpty && route.isNotEmpty) {
+          address1.text = '$streetNumber $route';
+        } else if (route.isNotEmpty) {
+          address1.text = route;
+        }
+
+        debugPrint('Place details filled: ${address1.text}');
+      }
+    } catch (e) {
+      debugPrint('Fetch place details error: $e');
     }
-    return [];
   }
 
   static Map<String, String> parseGoogleResponse(Map<String, dynamic> data) {
@@ -140,23 +208,20 @@ class AddressService {
     final components = address['addressComponents'] as List;
 
     Map<String, String> parsed = {
-      'address1': '', // We'll put the Hotel/Business name here
-      'address2': '', // We'll put the Street Address here
+      'address1': '',
+      'address2': '',
       'city': '',
       'state': '',
       'zip': '',
     };
 
-    // If USPS data exists, it's usually cleaner for US addresses
     if (usps != null && usps['standardizedAddress'] != null) {
       final std = usps['standardizedAddress'];
       return {
         'address1': std['firstAddressLine'] ?? '',
         'address2': std['secondAddressLine'] ?? '',
         'city': std['city'] ?? '',
-        'state':
-            address['postalAddress']['administrativeArea'] ??
-            '', // State is usually here
+        'state': address['postalAddress']['administrativeArea'] ?? '',
         'zip': std['zipCode'] ?? '',
       };
     }
@@ -167,16 +232,17 @@ class AddressService {
 
       switch (type) {
         case 'point_of_interest':
-          parsed['address1'] = text; // "Extended Stay"
+          parsed['address1'] = text;
           break;
         case 'street_number':
           parsed['address2'] = parsed['address2']!.isEmpty
               ? text
-              : "${parsed['address2']} $text";
+              : '${parsed['address2']} $text';
+          break;
         case 'route':
           parsed['address2'] = parsed['address2']!.isEmpty
               ? text
-              : "${parsed['address2']} $text";
+              : '${parsed['address2']} $text';
           break;
         case 'locality':
           parsed['city'] = text;
