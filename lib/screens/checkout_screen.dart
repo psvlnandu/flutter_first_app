@@ -104,7 +104,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       builder: (context) => AlertDialog(
         title: const Text(
           "Verify Shipping Address",
-          style: TextStyle(fontFamily: 'Coolvetica'),
+          // style: TextStyle(fontFamily: 'Coolvetica'),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -180,160 +180,169 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 600,
-          ), // Standard web width
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              // Changed from ListView.builder to a standard ListView
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 20,
-              ),
-              children: [
-                _sectionHeader("Your Order"),
-                _buildCartSummary(cartItems),
-                const Divider(height: 60),
-
-                _sectionHeader("Personal Information"),
-                PersonalInfoForm(
-                  nameController: _nameController,
-                  emailController: _emailController,
-                  phoneController: _phoneController,
+      body: Theme(
+        data: Theme.of(context).copyWith(
+          // Applies Coolvetica only to the body children
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(fontFamily: 'coolvetica'),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 600,
+            ), // Standard web width
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                // Changed from ListView.builder to a standard ListView
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 20,
                 ),
-                const SizedBox(height: 30),
+                children: [
+                  _sectionHeader("Your Order"),
+                  _buildCartSummary(cartItems),
+                  const Divider(height: 60),
 
-                _sectionHeader("Billing Address"),
-                // I've added city/zip here so we can sync them to shipping
-                _buildAddressFields(
-                  address01: _billAddress01,
-                  address02: _billAddress02,
-                  city: _billCity,
-                  state: _billState,
-                  zip: _billZip,
-                  label: "Billing",
-                ),
-                const SizedBox(height: 30),
-
-                _sectionHeader("Payment Details"),
-                BillingInfoForm(
-                  cardController: _cardController,
-                  onCardChanged: (val) => setState(() {}),
-                ),
-                const SizedBox(height: 30),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _sectionHeader("Shipping Address"),
-                    Row(
-                      children: [
-                        const Text(
-                          "Same as billing?",
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        Checkbox(
-                          value: _sameAsBilling,
-                          onChanged: (val) => _handleSync(val ?? false),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (!_sameAsBilling)
-                  _buildAddressFields(
-                    address01: _shipAddress01,
-                    address02: _shipAddress02,
-                    city: _shipCity,
-                    state: _shipState,
-                    zip: _shipZip,
-                    label: "Shipping",
+                  _sectionHeader("Personal Information"),
+                  PersonalInfoForm(
+                    nameController: _nameController,
+                    emailController: _emailController,
+                    phoneController: _phoneController,
                   ),
+                  const SizedBox(height: 30),
 
-                const SizedBox(height: 50),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (c) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
+                  _sectionHeader("Billing Address"),
+                  // I've added city/zip here so we can sync them to shipping
+                  _buildAddressFields(
+                    address01: _billAddress01,
+                    address02: _billAddress02,
+                    city: _billCity,
+                    state: _billState,
+                    zip: _billZip,
+                    label: "Billing",
+                  ),
+                  const SizedBox(height: 30),
 
-                        AddressValidationResult? result =
-                            await AddressService.validateAddress(
-                              address1: _shipAddress01.text,
-                              address2: _shipAddress02.text,
-                              city: _shipCity.text,
-                              state: _shipState.text,
-                              zip: _shipZip.text,
-                            );
+                  _sectionHeader("Payment Details"),
+                  BillingInfoForm(
+                    cardController: _cardController,
+                    onCardChanged: (val) => setState(() {}),
+                  ),
+                  const SizedBox(height: 30),
 
-                        if (!mounted) return;
-                        Navigator.pop(context);
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _sectionHeader("Shipping Address"),
+                      Row(
+                        children: [
+                          const Text(
+                            "Same as billing?",
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          Checkbox(
+                            value: _sameAsBilling,
+                            onChanged: (val) => _handleSync(val ?? false),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (!_sameAsBilling)
+                    _buildAddressFields(
+                      address01: _shipAddress01,
+                      address02: _shipAddress02,
+                      city: _shipCity,
+                      state: _shipState,
+                      zip: _shipZip,
+                      label: "Shipping",
+                    ),
 
-                        if (result != null) {
-                          // Only show dialog if address is actually problematic
-                          if (result.isNonsense) {
+                  const SizedBox(height: 50),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          showDialog(
+                            context: context,
+                            builder: (c) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+
+                          AddressValidationResult? result =
+                              await AddressService.validateAddress(
+                                address1: _shipAddress01.text,
+                                address2: _shipAddress02.text,
+                                city: _shipCity.text,
+                                state: _shipState.text,
+                                zip: _shipZip.text,
+                              );
+
+                          if (!mounted) return;
+                          Navigator.pop(context);
+
+                          if (result != null) {
+                            // Only show dialog if address is actually problematic
+                            if (result.isNonsense) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red[900],
+                                  content: const Text(
+                                    'Invalid Address: Street details not found. Please correct your input.',
+                                  ),
+                                ),
+                              );
+                              return; // STOP! Do not call _showAddressCheck
+                            } // 2. SOFT WARNING: If it's valid but needs fixing/confirmation
+                            if (result.isIncomplete || result.isSuspicious) {
+                              debugPrint('SOFT_WARNING');
+                              String original =
+                                  "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
+                              _showAddressCheck(
+                                original,
+                                result.formattedAddress,
+                              ); // Now this only happens for real places
+                            } else {
+                              // 3. PERFECT: Just pay
+                              _processPayment();
+                            }
+                          } else {
+                            // Validation failed
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: Colors.red[900],
-                                content: const Text(
-                                  'Invalid Address: Street details not found. Please correct your input.',
+                              const SnackBar(
+                                content: Text(
+                                  'Address could not be validated. Please try again.',
                                 ),
                               ),
                             );
-                            return; // STOP! Do not call _showAddressCheck
-                          } // 2. SOFT WARNING: If it's valid but needs fixing/confirmation
-                          if (result.isIncomplete || result.isSuspicious) {
-                            debugPrint('SOFT_WARNING');
-                            String original =
-                                "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
-                            _showAddressCheck(
-                              original,
-                              result.formattedAddress,
-                            ); // Now this only happens for real places
-                          } else {
-                            // 3. PERFECT: Just pay
-                            _processPayment();
                           }
-                        } else {
-                          // Validation failed
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Address could not be validated. Please try again.',
-                              ),
-                            ),
-                          );
                         }
-                      }
-                    },
+                      },
 
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.black, // High contrast like gymshark
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Colors.black, // High contrast like gymshark
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      "PLACE ORDER",
-                      style: TextStyle(
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.bold,
+                      child: const Text(
+                        "PLACE ORDER",
+                        style: TextStyle(
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ], //children
+                ], //children
+              ),
             ),
           ),
         ),
@@ -347,10 +356,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
-          fontFamily: 'Coolvetica',
-          // fontWeight: FontWeight.bold,
-        ),
+        // style: const TextStyle(
+        //   fontFamily: 'Coolvetica',
+        //   // fontWeight: FontWeight.bold,
+        // ),
       ),
     );
   }
