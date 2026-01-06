@@ -95,56 +95,65 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _showAddressCheck(String original, String preferred) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          "Verify Shipping Address",
-          style: TextStyle(fontFamily: 'Coolvetica'),
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          // Forces Coolvetica on every text style (Body, Title, Labels, Buttons)
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(fontFamily: 'coolvetica'),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "You entered:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(original),
-            const SizedBox(height: 15),
-            const Text(
-              "Suggested (Preferred):",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+
+        child: AlertDialog(
+          title: const Text(
+            "Verify Shipping Address",
+            style: TextStyle(fontFamily: 'Coolvetica'),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "You entered:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(original),
+              const SizedBox(height: 15),
+              const Text(
+                "Suggested (Preferred):",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+              Text(preferred),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _processPayment(); // Keep original
+              },
+              child: const Text(
+                "KEEP ORIGINAL",
+                style: TextStyle(color: Colors.grey),
               ),
             ),
-            Text(preferred),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+              onPressed: () {
+                // Update fields with Google's data
+                setState(() {
+                  _shipAddress01.text = preferred.split(',')[0];
+                  // Note: You may need more complex parsing to split City/State perfectly
+                });
+                Navigator.pop(context);
+                _processPayment(); // Use preferred
+              },
+              child: const Text("USE PREFERRED"),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processPayment(); // Keep original
-            },
-            child: const Text(
-              "KEEP ORIGINAL",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-            onPressed: () {
-              // Update fields with Google's data
-              setState(() {
-                _shipAddress01.text = preferred.split(',')[0];
-                // Note: You may need more complex parsing to split City/State perfectly
-              });
-              Navigator.pop(context);
-              _processPayment(); // Use preferred
-            },
-            child: const Text("USE PREFERRED"),
-          ),
-        ],
       ),
     );
   }
