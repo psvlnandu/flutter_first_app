@@ -5,6 +5,9 @@ import '../env/env.dart';
 
 // Define a simple class to hold the result
 class AddressValidationResult {
+  /*
+   Holds the final validated address data after calling Google's API.
+  */
   final Map<String, String> parsedAddress;
   final String formattedAddress;
   final bool isSuspicious;
@@ -19,6 +22,15 @@ class AddressValidationResult {
 }
 
 class AddressAutocompleteOption {
+  /* 
+  Holds ONE suggestion from the autocomplete dropdown.
+  Properties:
+
+  description - Full text shown in the dropdown (e.g., "123 Main Street, New York, NY")
+  placeId - Unique Google identifier for this location
+  mainText - The address part (e.g., "123 Main Street")
+  secondaryText - The city/state part (e.g., "New York, NY")
+  */
   final String description;
   final String placeId;
   final String mainText;
@@ -31,6 +43,7 @@ class AddressAutocompleteOption {
     required this.secondaryText,
   });
   factory AddressAutocompleteOption.fromJson(Map<String, dynamic> json) {
+    // Converts raw JSON from Google API into this clean object
     return AddressAutocompleteOption(
       description: json['description'] ?? '',
       placeId: json['place_id'] ?? '',
@@ -41,7 +54,16 @@ class AddressAutocompleteOption {
 }
 
 class AddressService {
-  // Store session token for the autocomplete session
+  /*
+  The main service class that talks to Google APIs (and your backend)
+
+  _sessionToken 
+  ->A unique ID for the entire typing session. Saves money on Google API credits by grouping related requests.
+  
+  initializeSessionToken()
+  What it does: Creates a new session token using the current time in milliseconds.
+  Why: Every time the user starts typing an address, they get a new session token. This groups all autocomplete + place details requests together, which Google charges less for.
+  */
   static String _sessionToken = '';
 
   static void initializeSessionToken() {
@@ -55,9 +77,22 @@ class AddressService {
     required String state,
     required String zip,
   }) async {
-    final url = Uri.parse(
-      'https://addressvalidation.googleapis.com/v1:validateAddress?key=${Env.googleapikey}',
-    );
+    /*
+    When user clicks "PLACE ORDER", this validates the final address is correct/complete.
+    FLOW
+      User has filled in address and clicks submit
+      This function sends the complete address to your backend
+      Backend forwards to Google Address Validation API
+      Google checks if address is:
+
+      Valid & complete ✓
+      Valid but needs fixing (missing apt number, etc.) ✗
+      Suspicious (unconfirmed address) 
+
+
+      Returns AddressValidationResult with all this info
+    */
+    final url = Uri.parse('http://127.0.0.1:3000/api/validate-address');
     // Combine address lines into the list
     final List<String> addressLines = [address1];
     if (address2 != null && address2.isNotEmpty) {
@@ -67,14 +102,14 @@ class AddressService {
     try {
       final response = await http.post(
         url,
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          "address": {
-            "addressLines": addressLines, // Now sends both!
-            "locality": city,
-            "administrativeArea": state,
-            "postalCode": zip,
-            "regionCode": "US",
-          },
+          "address1": address1,
+          "address2":
+              address2 ?? "", // ← ADD THIS (convert null to empty string)
+          "city": city,
+          "state": state,
+          "zip": zip,
         }),
       );
       if (response.statusCode == 200) {
@@ -109,16 +144,32 @@ class AddressService {
   static Future<List<AddressAutocompleteOption>> getAutocompletePredictions(
     String input,
   ) async {
+    /* As the user types in the address field, this returns a list of suggestions.
+      FLOW-
+      User types "200 Main"
+      This function sends "200 Main" to your backend
+      Backend forwards to Google Places Autocomplete API
+      Google returns suggestions like:
+      "200 Main Street, New York, NY"
+      "200 Main Ave, Boston, MA"
+      These get converted to AddressAutocompleteOption objects
+      Dropdown shows them to the user
+*/
+
     if (input.isEmpty) return [];
     if (_sessionToken.isEmpty) initializeSessionToken();
 
+    // final url = Uri.parse(
+    //   // 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+    //   'http://127.0.0.1:3000/api/autocomplete'
+    //   '?input=${Uri.encodeComponent(input)}'
+    //   '&key=${Env.googleapikey}'
+    //   '&sessiontoken=$_sessionToken'
+    //   '&components=country:us'
+    //   '&language=en',
+    // );
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-      '?input=$input'
-      '&key=${Env.googleapikey}'
-      '&sessiontoken=$_sessionToken'
-      '&components=country:us'
-      '&language=en',
+      'http://127.0.0.1:3000/api/autocomplete?input=${Uri.encodeComponent(input)}&sessionToken=$_sessionToken',
     );
 
     try {
@@ -152,12 +203,24 @@ class AddressService {
     required TextEditingController zip,
     TextEditingController? address2,
   }) async {
+    /*
+    When user clicks on one suggestion, this fills in all the address fields automatically.
+    FLOW
+    User clicks "200 Main Street, New York, NY" from dropdown
+    You pass the placeId to this function
+    Function calls Google Places Details API
+    Google returns address components (street number, route, city, state, zip)
+    Function parses these and fills the TextEditingControllers you passed in
+    */
+    // final url = Uri.parse(
+    //   'https://maps.googleapis.com/maps/api/place/details/json'
+    //   '?place_id=$placeId'
+    //   '&key=${Env.googleapikey}'
+    //   '&sessiontoken=$_sessionToken'
+    //   '&fields=address_components',
+    // );
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/details/json'
-      '?place_id=$placeId'
-      '&key=${Env.googleapikey}'
-      '&sessiontoken=$_sessionToken'
-      '&fields=address_components',
+      'http://127.0.0.1:3000/api/place-details?placeId=$placeId&sessionToken=$_sessionToken',
     );
 
     try {
@@ -203,6 +266,7 @@ class AddressService {
   }
 
   static Map<String, String> parseGoogleResponse(Map<String, dynamic> data) {
+    // Takes the messy JSON from Google's validation API and extracts just what you need
     final usps = data['result']['uspsData'];
     final address = data['result']['address'];
     final components = address['addressComponents'] as List;

@@ -16,9 +16,6 @@ abstract class Env {
   @EnviedField(varName: 'SECRET_KEY')
   static final String secretKey = _Env.secretKey;
 
-  // Stripe- not being used for now
-  @EnviedField(varName: 'PK_TEST', obfuscate: true)
-  static final String pktest = _Env.pktest;
 
   // Google Cloud Console
   @EnviedField(varName: 'GOOGLE_API_KEY', obfuscate: true)
