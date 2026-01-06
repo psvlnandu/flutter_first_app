@@ -16,7 +16,6 @@ abstract class Env {
   @EnviedField(varName: 'SECRET_KEY')
   static final String secretKey = _Env.secretKey;
 
-
   // Google Cloud Console
   @EnviedField(varName: 'GOOGLE_API_KEY', obfuscate: true)
   static final String googleapikey = _Env.googleapikey;
