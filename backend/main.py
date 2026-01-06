@@ -10,9 +10,16 @@ import httpx
 import os
 from dotenv import load_dotenv
 
+import firebase_admin
+from firebase_admin import credentials, auth
+
 load_dotenv()
 
 app = FastAPI()
+
+# 1. Initialize Firebase Admin (Use the JSON file you added to .gitignore!)
+cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
 
 # CORS middleware
 app.add_middleware(
@@ -104,5 +111,27 @@ async def validate_address(request: AddressValidationRequest):
             data = response.json()
             print(f"Validation Response: {data}")
             return data
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/api/generate-verification-link")
+async def generate_link(email: str):
+    try:
+        # 2. Define where the user goes AFTER clicking the link
+        action_code_settings = auth.ActionCodeSettings(
+            url='https://coffeshop-app-c229c.firebaseapp.com/checkout', # The redirect URL
+            handle_code_in_app=True,
+            ios_bundle_id='com.you.coffeeshop',
+            android_package_name='com.example.coffeeshop',
+            android_install_app=True,
+            android_minimum_version='12',
+        )
+
+        # 3. Generate the actual link
+        link = auth.generate_email_verification_link(email, action_code_settings)
+        
+        # 4. In a real app, you'd email this 'link' to the user here.
+        # For now, we'll just return it to the Flutter app to test.
+        return {"verification_link": link}
     except Exception as e:
         return {"error": str(e)}

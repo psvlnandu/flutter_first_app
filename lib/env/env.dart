@@ -20,4 +20,17 @@ abstract class Env {
   @EnviedField(varName: 'GOOGLE_API_KEY', obfuscate: true)
   static final String googleapikey = _Env.googleapikey;
 
+  // Firebase
+  @EnviedField(varName: 'FIREBASE_API_KEY', obfuscate: true)
+  static final String firebaseApiKey = _Env.firebaseApiKey;
+
+  @EnviedField(varName: 'APP_ID')
+  static final String firebaseAppId = _Env.firebaseAppId;
+
+  @EnviedField(varName: 'MESSAGING_SENDER_ID')
+  static final String messagingSenderId = _Env.messagingSenderId;
+
+  @EnviedField(varName: 'PROJECT_ID')
+  static final String projectId = _Env.projectId;
+
 }
