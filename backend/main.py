@@ -98,6 +98,8 @@ async def validate_address(request: AddressValidationRequest):
         
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, params=params)
-            return response.json()
+            data = response.json()
+            print(f"Validation Response: {data}")
+            return data
     except Exception as e:
         return {"error": str(e)}
