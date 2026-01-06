@@ -12,12 +12,14 @@ class AddressValidationResult {
   final String formattedAddress;
   final bool isSuspicious;
   final bool isIncomplete;
+  final bool isNonsense;
 
   AddressValidationResult({
     required this.parsedAddress,
     required this.formattedAddress,
     required this.isSuspicious,
     required this.isIncomplete,
+    required this.isNonsense,
   });
 }
 
@@ -120,19 +122,25 @@ class AddressService {
         debugPrint('parsed: $parsed');
 
         final verdict = data['result']['verdict'];
-        bool isIncomplete =
-            verdict['possibleNextAction'] == 'FIX' ||
-            verdict['validationGranularity'] == 'OTHER';
 
-        final bool isSuspicious = response.body.contains(
-          "UNCONFIRMED_AND_SUSPICIOUS",
-        );
+        final String granularity = verdict['validationGranularity'] ?? '';
+        final String action = verdict['possibleNextAction'] ?? '';
+
+        // NONSENSE CHECK: If it can only find the City/State but not the house
+        // Google returns 'OTHER' or 'ROUTE' when it's a guess.
+        bool isNonsense = granularity == 'OTHER' || granularity == 'NONE';
+
+        bool isInvalid =
+            isNonsense ||
+            verdict['hasUnconfirmedComponents'] == true ||
+            action == 'FIX';
 
         return AddressValidationResult(
           parsedAddress: parsed,
           formattedAddress: data['result']['address']['formattedAddress'] ?? '',
-          isSuspicious: isSuspicious,
-          isIncomplete: isIncomplete,
+          isSuspicious: response.body.contains("UNCONFIRMED_AND_SUSPICIOUS"),
+          isIncomplete: isInvalid,
+          isNonsense: isNonsense, // Pass the flag
         );
       }
     } catch (e) {

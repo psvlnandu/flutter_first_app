@@ -50,12 +50,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         _shipCity.text = _billCity.text;
         _shipState.text = _billState.text;
         _shipZip.text = _billZip.text;
-      } else {
-        _shipAddress01.clear();
-        _shipAddress02.clear();
-        _shipCity.clear();
-        _shipState.clear();
-        _shipZip.clear();
       }
     });
   }
@@ -101,56 +95,86 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _showAddressCheck(String original, String preferred) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          "Verify Shipping Address",
-          style: TextStyle(fontFamily: 'Coolvetica'),
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          // Forces Coolvetica on every text style (Body, Title, Labels, Buttons)
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(fontFamily: 'coolvetica'),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "You entered:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(original),
-            const SizedBox(height: 15),
-            const Text(
-              "Suggested (Preferred):",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+
+        child: AlertDialog(
+          title: const Text(
+            "Verify Shipping Address",
+            style: TextStyle(fontFamily: 'Coolvetica'),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "You entered:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(original),
+              const SizedBox(height: 15),
+              const Text(
+                "Suggested (Preferred):",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+              Text(preferred),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _processPayment(); // Keep original
+              },
+              child: const Text(
+                "KEEP ORIGINAL",
+                style: TextStyle(color: Colors.grey),
               ),
             ),
-            Text(preferred),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+              onPressed: () {
+                List<String> parts = preferred.split(',');
+
+                setState(() {
+                  if (parts.isNotEmpty) _shipAddress01.text = parts[0].trim();
+
+                  if (parts.length > 1) {
+                    _shipCity.text = parts[1].trim();
+                  }
+
+                  if (parts.length > 2) {
+                    // Handles "NY 13676" by splitting the space
+                    List<String> stateZip = parts[2].trim().split(' ');
+                    if (stateZip.isNotEmpty) _shipState.text = stateZip[0];
+                    if (stateZip.length > 1) _shipZip.text = stateZip[1];
+                  }
+                });
+
+                // 2. Close the dialog only
+                Navigator.pop(context);
+
+                // 3. Inform the user they can now proceed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Address updated! Review and click Place Order.",
+                    ),
+                  ),
+                );
+              },
+              child: const Text("USE PREFERRED"),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processPayment(); // Keep original
-            },
-            child: const Text(
-              "KEEP ORIGINAL",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-            onPressed: () {
-              // Update fields with Google's data
-              setState(() {
-                _shipAddress01.text = preferred.split(',')[0];
-                // Note: You may need more complex parsing to split City/State perfectly
-              });
-              Navigator.pop(context);
-              _processPayment(); // Use preferred
-            },
-            child: const Text("USE PREFERRED"),
-          ),
-        ],
       ),
     );
   }
@@ -180,70 +204,78 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 600,
-          ), // Standard web width
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              // Changed from ListView.builder to a standard ListView
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 20,
-              ),
-              children: [
-                _sectionHeader("Your Order"),
-                _buildCartSummary(cartItems),
-                const Divider(height: 60),
-
-                _sectionHeader("Personal Information"),
-                PersonalInfoForm(
-                  nameController: _nameController,
-                  emailController: _emailController,
-                  phoneController: _phoneController,
+      body: Theme(
+        data: Theme.of(context).copyWith(
+          // Applies Coolvetica only to the body children
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(fontFamily: 'coolvetica'),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 600,
+            ), // Standard web width
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                // Changed from ListView.builder to a standard ListView
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 20,
                 ),
-                const SizedBox(height: 30),
+                children: [
+                  _sectionHeader("Your Order"),
+                  _buildCartSummary(cartItems),
+                  const Divider(height: 60),
 
-                _sectionHeader("Billing Address"),
-                // I've added city/zip here so we can sync them to shipping
-                _buildAddressFields(
-                  address01: _billAddress01,
-                  address02: _billAddress02,
-                  city: _billCity,
-                  state: _billState,
-                  zip: _billZip,
-                  label: "Billing",
-                ),
-                const SizedBox(height: 30),
+                  _sectionHeader("Personal Information"),
+                  PersonalInfoForm(
+                    nameController: _nameController,
+                    emailController: _emailController,
+                    phoneController: _phoneController,
+                  ),
+                  const SizedBox(height: 30),
 
-                _sectionHeader("Payment Details"),
-                BillingInfoForm(
-                  cardController: _cardController,
-                  onCardChanged: (val) => setState(() {}),
-                ),
-                const SizedBox(height: 30),
+                  _sectionHeader("Billing Address"),
+                  // I've added city/zip here so we can sync them to shipping
+                  _buildAddressFields(
+                    address01: _billAddress01,
+                    address02: _billAddress02,
+                    city: _billCity,
+                    state: _billState,
+                    zip: _billZip,
+                    label: "Billing",
+                    isReadOnly: false,
+                  ),
+                  const SizedBox(height: 30),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _sectionHeader("Shipping Address"),
-                    Row(
-                      children: [
-                        const Text(
-                          "Same as billing?",
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        Checkbox(
-                          value: _sameAsBilling,
-                          onChanged: (val) => _handleSync(val ?? false),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (!_sameAsBilling)
+                  _sectionHeader("Payment Details"),
+                  BillingInfoForm(
+                    cardController: _cardController,
+                    onCardChanged: (val) => setState(() {}),
+                  ),
+                  const SizedBox(height: 30),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _sectionHeader("Shipping Address"),
+                      Row(
+                        children: [
+                          const Text(
+                            "Same as billing?",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          Checkbox(
+                            value: _sameAsBilling,
+                            onChanged: (val) => _handleSync(val ?? false),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
                   _buildAddressFields(
                     address01: _shipAddress01,
                     address02: _shipAddress02,
@@ -251,62 +283,92 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     state: _shipState,
                     zip: _shipZip,
                     label: "Shipping",
+                    isReadOnly: _sameAsBilling,
                   ),
 
-                const SizedBox(height: 50),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (c) =>
-                              const Center(child: CircularProgressIndicator()),
-                        );
+                  const SizedBox(height: 50),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          showDialog(
+                            context: context,
+                            builder: (c) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
 
-                        AddressValidationResult? result =
-                            await AddressService.validateAddress(
-                              address1: _shipAddress01.text,
-                              address2: _shipAddress02.text,
-                              city: _shipCity.text,
-                              state: _shipState.text,
-                              zip: _shipZip.text,
+                          AddressValidationResult? result =
+                              await AddressService.validateAddress(
+                                address1: _shipAddress01.text,
+                                address2: _shipAddress02.text,
+                                city: _shipCity.text,
+                                state: _shipState.text,
+                                zip: _shipZip.text,
+                              );
+
+                          if (!mounted) return;
+                          Navigator.pop(context);
+
+                          if (result != null) {
+                            // Only show dialog if address is actually problematic
+                            if (result.isNonsense) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: Colors.red[900],
+                                  content: const Text(
+                                    'Invalid Address: Street details not found. Please correct your input.',
+                                  ),
+                                ),
+                              );
+                              return; // STOP! Do not call _showAddressCheck
+                            } // 2. SOFT WARNING: If it's valid but needs fixing/confirmation
+                            if (result.isIncomplete || result.isSuspicious) {
+                              debugPrint('SOFT_WARNING');
+                              String original =
+                                  "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
+                              _showAddressCheck(
+                                original,
+                                result.formattedAddress,
+                              ); // Now this only happens for real places
+                            } else {
+                              // 3. PERFECT: Just pay
+                              _processPayment();
+                            }
+                          } else {
+                            // Validation failed
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Address could not be validated. Please try again.',
+                                ),
+                              ),
                             );
-
-                        if (!mounted) return;
-                        Navigator.pop(context);
-
-                        if (result != null && result.isIncomplete) {
-                          String original =
-                              "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
-                          String preferred = result.formattedAddress;
-                          _showAddressCheck(original, preferred);
-                        } else {
-                          _processPayment();
+                          }
                         }
-                      }
-                    },
+                      },
 
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.black, // High contrast like gymshark
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Colors.black, // High contrast like gymshark
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      "PLACE ORDER",
-                      style: TextStyle(
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.bold,
+                      child: const Text(
+                        "PLACE ORDER",
+                        style: TextStyle(
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ], //children
+                ], //children
+              ),
             ),
           ),
         ),
@@ -322,6 +384,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         title.toUpperCase(),
         style: const TextStyle(
           fontFamily: 'Coolvetica',
+          fontSize: 16,
           // fontWeight: FontWeight.bold,
         ),
       ),
@@ -335,95 +398,109 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     required TextEditingController state,
     required TextEditingController zip,
     required String label,
+    required bool isReadOnly,
   }) {
     return Column(
       children: [
-        // AUTOCOMPLETE FIELD
-        Autocomplete<AddressAutocompleteOption>(
-          optionsBuilder: (TextEditingValue textEditingValue) async {
-            if (textEditingValue.text.length < 3) {
-              return const Iterable.empty();
-            }
-            final results = await AddressService.getAutocompletePredictions(
-              textEditingValue.text,
-            );
-            return results;
-          },
-          displayStringForOption: (option) => option.description,
-          onSelected: (selection) async {
-            await AddressService.fetchPlaceDetails(
-              selection.placeId,
-              address1: address01,
-              address2: address02,
-              city: city,
-              state: state,
-              zip: zip,
-            );
-            setState(() {});
-          },
-          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-            return TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: "$label Address Line 1",
-                prefixIcon: const Icon(Icons.location_on_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onChanged: (val) {
-                address01.text = val;
-              },
-              validator: (value) =>
-                  value?.isEmpty ?? true ? "Address is required" : null,
-            );
-          },
-          optionsViewBuilder: (context, onSelected, options) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 250,
-                    maxWidth: 552,
-                  ),
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: options.length,
-                    itemBuilder: (context, index) {
-                      final option = options.elementAt(index);
-                      return ListTile(
-                        leading: const Icon(Icons.location_on),
-                        title: Text(
-                          option.mainText,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          option.secondaryText,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        onTap: () => onSelected(option),
-                      );
+        // ADDRESS LINE 1
+        // Wrap Autocomplete to prevent interaction when locked
+        IgnorePointer(
+          ignoring: isReadOnly,
+          child: Autocomplete<AddressAutocompleteOption>(
+            optionsBuilder: (TextEditingValue textEditingValue) async {
+              if (textEditingValue.text.length < 3) {
+                return const Iterable.empty();
+              }
+              final results = await AddressService.getAutocompletePredictions(
+                textEditingValue.text,
+              );
+              return results;
+            },
+            displayStringForOption: (option) => option.description,
+            onSelected: (selection) async {
+              await AddressService.fetchPlaceDetails(
+                selection.placeId,
+                address1: address01,
+                address2: address02,
+                city: city,
+                state: state,
+                zip: zip,
+              );
+              setState(() {});
+            },
+            fieldViewBuilder:
+                (context, internalController, focusNode, onFieldSubmitted) {
+                  if (internalController.text != address01.text) {
+                    internalController.text = address01.text;
+                  }
+                  if (isReadOnly) internalController.text = address01.text;
+                  return TextFormField(
+                    controller: internalController,
+                    focusNode: focusNode,
+                    readOnly: isReadOnly,
+                    decoration: InputDecoration(
+                      labelText: "$label Address Line 1",
+                      prefixIcon: const Icon(Icons.location_on_outlined),
+                      filled: isReadOnly,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      address01.text = val;
                     },
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? "Address is required" : null,
+                  );
+                },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 250,
+                      maxWidth: 552,
+                    ),
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return ListTile(
+                          leading: const Icon(Icons.location_on),
+                          title: Text(
+                            option.mainText,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          subtitle: Text(
+                            option.secondaryText,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
         const SizedBox(height: 16),
 
         // ADDRESS LINE 2
         TextFormField(
           controller: address02,
+          readOnly: isReadOnly,
           decoration: InputDecoration(
             labelText: "$label Address Line 2 (Apt, Suite, etc)",
+            filled: isReadOnly,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
@@ -437,6 +514,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 controller: city,
                 decoration: InputDecoration(
                   labelText: "City",
+                  filled: isReadOnly,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -450,6 +528,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               width: 100,
               child: TextFormField(
                 controller: state,
+                readOnly: isReadOnly,
                 decoration: InputDecoration(
                   labelText: "State",
                   border: OutlineInputBorder(
@@ -467,8 +546,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         // ZIP CODE
         TextFormField(
           controller: zip,
+          readOnly: isReadOnly,
           decoration: InputDecoration(
             labelText: "Zip Code",
+            filled: isReadOnly,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
           keyboardType: TextInputType.number,
