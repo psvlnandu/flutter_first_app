@@ -278,13 +278,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         if (!mounted) return;
                         Navigator.pop(context);
 
-                        if (result != null && result.isIncomplete) {
-                          String original =
-                              "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
-                          String preferred = result.formattedAddress;
-                          _showAddressCheck(original, preferred);
+                        if (result != null) {
+                          // Only show dialog if address is actually problematic
+                          if (result.isNonsense) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.red[900],
+                                content: const Text(
+                                  'Invalid Address: Street details not found. Please correct your input.',
+                                ),
+                              ),
+                            );
+                            return; // STOP! Do not call _showAddressCheck
+                          } // 2. SOFT WARNING: If it's valid but needs fixing/confirmation
+                          if (result.isIncomplete || result.isSuspicious) {
+                            debugPrint('SOFT_WARNING');
+                            String original =
+                                "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
+                            _showAddressCheck(
+                              original,
+                              result.formattedAddress,
+                            ); // Now this only happens for real places
+                          } else {
+                            // 3. PERFECT: Just pay
+                            _processPayment();
+                          }
                         } else {
-                          _processPayment();
+                          // Validation failed
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Address could not be validated. Please try again.',
+                              ),
+                            ),
+                          );
                         }
                       }
                     },

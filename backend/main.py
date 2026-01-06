@@ -1,5 +1,8 @@
 # ==================== backend/main.py ====================
-
+"""
+RUN backend:
+python -m uvicorn main:app --reload --port 3000
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
