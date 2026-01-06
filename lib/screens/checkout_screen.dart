@@ -104,7 +104,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       builder: (context) => AlertDialog(
         title: const Text(
           "Verify Shipping Address",
-          // style: TextStyle(fontFamily: 'Coolvetica'),
+          style: TextStyle(fontFamily: 'Coolvetica'),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -356,10 +356,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title.toUpperCase(),
-        // style: const TextStyle(
-        //   fontFamily: 'Coolvetica',
-        //   // fontWeight: FontWeight.bold,
-        // ),
+        style: const TextStyle(
+          fontFamily: 'Coolvetica',
+          fontSize: 16,
+          // fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
