@@ -429,10 +429,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               setState(() {});
             },
             fieldViewBuilder:
-                (context, controller, focusNode, onFieldSubmitted) {
-                  if (isReadOnly) controller.text = address01.text;
+                (context, internalController, focusNode, onFieldSubmitted) {
+                  if (internalController.text != address01.text) {
+                    internalController.text = address01.text;
+                  }
+                  if (isReadOnly) internalController.text = address01.text;
                   return TextFormField(
-                    controller: controller,
+                    controller: internalController,
                     focusNode: focusNode,
                     readOnly: isReadOnly,
                     decoration: InputDecoration(
