@@ -142,13 +142,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
               onPressed: () {
-                // Update fields with Google's data
+                List<String> parts = preferred.split(',');
+
                 setState(() {
-                  _shipAddress01.text = preferred.split(',')[0];
-                  // Note: You may need more complex parsing to split City/State perfectly
+                  if (parts.isNotEmpty) _shipAddress01.text = parts[0].trim();
+
+                  if (parts.length > 1) {
+                    _shipCity.text = parts[1].trim();
+                  }
+
+                  if (parts.length > 2) {
+                    // Handles "NY 13676" by splitting the space
+                    List<String> stateZip = parts[2].trim().split(' ');
+                    if (stateZip.isNotEmpty) _shipState.text = stateZip[0];
+                    if (stateZip.length > 1) _shipZip.text = stateZip[1];
+                  }
                 });
+
+                // 2. Close the dialog only
                 Navigator.pop(context);
-                _processPayment(); // Use preferred
+
+                // 3. Inform the user they can now proceed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Address updated! Review and click Place Order.",
+                    ),
+                  ),
+                );
               },
               child: const Text("USE PREFERRED"),
             ),
