@@ -113,7 +113,7 @@ async def validate_address(request: AddressValidationRequest):
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, params=params)
             data = response.json()
-            print(f"Validation Response: {data}")
+            # print(f"Validation Response: {data}")
             return data
     except Exception as e:
         return {"error": str(e)}
@@ -142,7 +142,7 @@ async def guest_verify(request: dict):
         )
         link = auth.generate_email_verification_link(email, action_code_settings)
         
-        # --- SEND EMAIL LOGIC GOES HERE ---
+        await send_verification_email(email, link)
         return {"status": "success", "link": link}
     except Exception as e:
         return {"error": str(e)}
