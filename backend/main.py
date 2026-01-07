@@ -1,5 +1,8 @@
 # ==================== backend/main.py ====================
 """
+install dependencies if didn't
+pip install -r requirements.txt
+
 RUN backend:
 python -m uvicorn main:app --reload --port 3000
 """
@@ -18,7 +21,7 @@ load_dotenv()
 app = FastAPI()
 
 # 1. Initialize Firebase Admin (Use the JSON file you added to .gitignore!)
-cred = credentials.Certificate("path/to/your/serviceAccountKey.json")
+cred = credentials.Certificate(r"C:\Users\Nandhu\Documents\Flutter Apps\flutter_application_1\coffeshop-app-c229c-firebase-adminsdk-fbsvc-746581e718.json")
 firebase_admin.initialize_app(cred)
 
 # CORS middleware
@@ -133,5 +136,29 @@ async def generate_link(email: str):
         # 4. In a real app, you'd email this 'link' to the user here.
         # For now, we'll just return it to the Flutter app to test.
         return {"verification_link": link}
+    except Exception as e:
+        return {"error": str(e)}
+    
+@app.post("/api/guest-verify")
+async def guest_verify(request: dict):
+    email = request.get("email")
+    uid = request.get("uid")
+    
+    try:
+        # 1. Update the anonymous user with the email (No password needed!)
+        auth.update_user(uid, email=email)
+        
+        # 2. Setup where the user returns after clicking
+        action_code_settings = auth.ActionCodeSettings(
+            url='https://coffeshop-app-c229c.firebaseapp.com/checkout',
+            handle_code_in_app=True,
+            ios_bundle_id='com.example.coffeeshop',
+            android_package_name='com.example.coffeeshop',
+        )
+
+        # 3. Generate the link
+        link = auth.generate_email_verification_link(email, action_code_settings)
+        
+        return {"status": "success", "link": link}
     except Exception as e:
         return {"error": str(e)}

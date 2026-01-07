@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/services/address_service.dart';
 import 'package:flutter_application_1/widgets/checkout/billing_info_form.dart';
 import 'package:flutter_application_1/widgets/checkout/personal_info_form.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -292,61 +296,60 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     height: 55,
                     child: ElevatedButton(
                       onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          showDialog(
-                            context: context,
-                            builder: (c) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
+                        if (!_formKey.currentState!.validate()) return;
 
-                          AddressValidationResult? result =
-                              await AddressService.validateAddress(
-                                address1: _shipAddress01.text,
-                                address2: _shipAddress02.text,
-                                city: _shipCity.text,
-                                state: _shipState.text,
-                                zip: _shipZip.text,
-                              );
+                        // 1. Show Loading
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (c) =>
+                              const Center(child: CircularProgressIndicator()),
+                        );
 
-                          if (!mounted) return;
-                          Navigator.pop(context);
-
-                          if (result != null) {
-                            // Only show dialog if address is actually problematic
-                            if (result.isNonsense) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: Colors.red[900],
-                                  content: const Text(
-                                    'Invalid Address: Street details not found. Please correct your input.',
-                                  ),
-                                ),
-                              );
-                              return; // STOP! Do not call _showAddressCheck
-                            } // 2. SOFT WARNING: If it's valid but needs fixing/confirmation
-                            if (result.isIncomplete || result.isSuspicious) {
-                              debugPrint('SOFT_WARNING');
-                              String original =
-                                  "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
-                              _showAddressCheck(
-                                original,
-                                result.formattedAddress,
-                              ); // Now this only happens for real places
-                            } else {
-                              // 3. PERFECT: Just pay
-                              _processPayment();
-                            }
-                          } else {
-                            // Validation failed
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Address could not be validated. Please try again.',
-                                ),
-                              ),
+                        AddressValidationResult? result =
+                            await AddressService.validateAddress(
+                              address1: _shipAddress01.text,
+                              address2: _shipAddress02.text,
+                              city: _shipCity.text,
+                              state: _shipState.text,
+                              zip: _shipZip.text,
                             );
-                          }
+
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        if (result == null) return;
+                        if (result.isNonsense) {
+                          _showSnackBar(
+                            'Invalid Address: Street details not found.',
+                            isError: true,
+                          );
+                          return;
+                        }
+                        if (result.isIncomplete || result.isSuspicious) {
+                          debugPrint('SOFT_WARNING');
+                          String original =
+                              "${_shipAddress01.text}, ${_shipCity.text}, ${_shipState.text} ${_shipZip.text}";
+                          _showAddressCheck(
+                            original,
+                            result.formattedAddress,
+                          ); // Now this only happens for real places
+                        }
+
+                        // 4. Handle Authentication/Email
+                        User? user = FirebaseAuth.instance.currentUser;
+                        user ??=
+                            (await FirebaseAuth.instance.signInAnonymously())
+                                .user;
+
+                        await user?.reload();
+                        user = FirebaseAuth.instance.currentUser;
+
+                        if (user?.email == null || !user!.emailVerified) {
+                          _showEmailEntryDialog(
+                            user!,
+                            _emailController,
+                          ); // This will trigger the FastAPI link
+                          return;
                         }
                       },
 
@@ -371,6 +374,94 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showEmailEntryDialog(User user, TextEditingController emailController) {
+    showDialog(
+      context: context,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(fontFamily: 'coolvetica'),
+        ),
+        child: AlertDialog(
+          title: const Text(
+            "Verify Your Email",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          // ADD THIS: Tell them which email the link is going to
+          content: Text(
+            "We will send a verification link to: \n${emailController.text}",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("CANCEL", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) return;
+
+                try {
+                  // 2. Trigger your FastAPI proxy
+                  final response = await http.post(
+                    Uri.parse('http://127.0.0.1:3000/api/guest-verify'),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({
+                      'email': email,
+                      'uid': user.uid, // Pass the anonymous UID
+                    }),
+                  );
+
+                  if (!mounted) return;
+                  Navigator.pop(context);
+
+                  if (response.statusCode == 200) {
+                    _showSnackBar("Verification link sent! Check your inbox.");
+                    debugPrint('Guest_verify:$response');
+                  }
+                } catch (e) {
+                  debugPrint("Error: $e");
+                  _showSnackBar(
+                    "Failed to send link. Please try again.",
+                    isError: true,
+                  );
+                }
+              },
+              child: const Text("VERIFY NOW"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(fontFamily: 'coolvetica', letterSpacing: 0.5),
+        ),
+        backgroundColor: isError ? Colors.red[900] : Colors.grey[900],
+        behavior: SnackBarBehavior.floating, // Makes it look modern/detached
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'DISMISS',
+          textColor: Colors.white70,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
         ),
       ),
     );
