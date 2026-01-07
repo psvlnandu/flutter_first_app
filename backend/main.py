@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import httpx
 import os
 from dotenv import load_dotenv
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -116,49 +117,53 @@ async def validate_address(request: AddressValidationRequest):
             return data
     except Exception as e:
         return {"error": str(e)}
-    
-@app.post("/api/generate-verification-link")
-async def generate_link(email: str):
-    try:
-        # 2. Define where the user goes AFTER clicking the link
-        action_code_settings = auth.ActionCodeSettings(
-            url='https://coffeshop-app-c229c.firebaseapp.com/checkout', # The redirect URL
-            handle_code_in_app=True,
-            ios_bundle_id='com.you.coffeeshop',
-            android_package_name='com.example.coffeeshop',
-            android_install_app=True,
-            android_minimum_version='12',
-        )
-
-        # 3. Generate the actual link
-        link = auth.generate_email_verification_link(email, action_code_settings)
-        
-        # 4. In a real app, you'd email this 'link' to the user here.
-        # For now, we'll just return it to the Flutter app to test.
-        return {"verification_link": link}
-    except Exception as e:
-        return {"error": str(e)}
-    
+ 
+ 
 @app.post("/api/guest-verify")
 async def guest_verify(request: dict):
     email = request.get("email")
     uid = request.get("uid")
     
     try:
-        # 1. Update the anonymous user with the email (No password needed!)
-        auth.update_user(uid, email=email)
-        
-        # 2. Setup where the user returns after clicking
+        try:
+            existing_user = auth.get_user_by_email(email)
+            target_uid = existing_user.uid # Use the existing account's UID
+        except auth.UserNotFoundError:
+            # If not found, update the current anonymous user
+            auth.update_user(uid, email=email)
+            target_uid = uid
+
+        # Generate the link
         action_code_settings = auth.ActionCodeSettings(
             url='https://coffeshop-app-c229c.firebaseapp.com/checkout',
             handle_code_in_app=True,
             ios_bundle_id='com.example.coffeeshop',
             android_package_name='com.example.coffeeshop',
         )
-
-        # 3. Generate the link
         link = auth.generate_email_verification_link(email, action_code_settings)
         
+        # --- SEND EMAIL LOGIC GOES HERE ---
         return {"status": "success", "link": link}
     except Exception as e:
         return {"error": str(e)}
+    
+conf = ConnectionConfig(
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM = os.getenv("MAIL_USERNAME"),
+    MAIL_PORT = 587,
+    MAIL_SERVER = "smtp.gmail.com",
+    MAIL_STARTTLS = True,
+    MAIL_SSL_TLS = False,
+    USE_CREDENTIALS = True
+)
+
+async def send_verification_email(email: str, link: str):
+    message = MessageSchema(
+        subject="Verify your Coffee Order",
+        recipients=[email],
+        body=f"Click the link to verify your guest checkout: {link}",
+        subtype=MessageType.html
+    )
+    fm = FastMail(conf)
+    await fm.send_message(message)

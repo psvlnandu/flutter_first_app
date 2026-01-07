@@ -427,7 +427,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
                   if (response.statusCode == 200) {
                     _showSnackBar("Verification link sent! Check your inbox.");
-                    debugPrint('Guest_verify:$response');
+                    debugPrint('Guest_verify:${response.body}');
                   }
                 } catch (e) {
                   debugPrint("Error: $e");
@@ -711,14 +711,4 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  void _fillAddressFromPlaceId(String placeId) async {
-    await AddressService.fetchPlaceDetails(
-      placeId,
-      address1: _shipAddress01,
-      city: _shipCity,
-      state: _shipState,
-      zip: _shipZip,
-    );
-    setState(() {}); // Refresh UI to show the new auto-filled values
-  }
 }
