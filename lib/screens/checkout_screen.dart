@@ -509,22 +509,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             },
             displayStringForOption: (option) => option.description,
             onSelected: (selection) async {
-              await AddressService.fetchPlaceDetails(
-                selection.placeId,
-                address1: address01,
-                address2: address02,
-                city: city,
-                state: state,
-                zip: zip,
-              );
-              setState(() {});
+              // FIX 1: Delay the heavy data fetching and controller updates
+              // until the current frame is done rendering.
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                await AddressService.fetchPlaceDetails(
+                  selection.placeId,
+                  address1: address01,
+                  address2: address02,
+                  city: city,
+                  state: state,
+                  zip: zip,
+                );
+                // Safe to call setState here now
+                setState(() {});
+              });
             },
             fieldViewBuilder:
                 (context, internalController, focusNode, onFieldSubmitted) {
+                  // FIX 2: Prevent the build-time controller sync from triggering another build
                   if (internalController.text != address01.text) {
-                    internalController.text = address01.text;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      internalController.text = address01.text;
+                    });
                   }
-                  if (isReadOnly) internalController.text = address01.text;
+
+                  if (isReadOnly) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      internalController.text = address01.text;
+                    });
+                  }
                   return TextFormField(
                     controller: internalController,
                     focusNode: focusNode,
@@ -710,5 +723,4 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }).toList(),
     );
   }
-
 }
