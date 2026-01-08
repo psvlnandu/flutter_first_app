@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/screens/auth_screen.dart';
-import 'screens/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
 import 'screens/checkout_screen.dart';
+import 'screens/auth_screen.dart';
+import 'screens/home_screen.dart';
 import 'env/env.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const HomeScreen(),
         '/favs': (context) => const FavsScreen(),
         '/checkout': (context) => const CheckoutScreen(),
-        '/auth':(context)=>const AuthScreen();
+        '/profile':(context)=>const AuthScreen(),
       },
     );
   }
