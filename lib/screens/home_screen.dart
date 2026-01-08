@@ -259,6 +259,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
+                Navigator.pushNamed(context, '/profile');
                 // We'll set this up later!
               },
             ),
