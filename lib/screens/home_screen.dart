@@ -17,22 +17,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _loadFullFeed(); // Load the first page
-    // Listen to scroll movements
-    _scrollController.addListener(() {
-      // If we are at 80% of the scroll height, load more!
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController =
+      TextEditingController(); // Added for search
+  String _currentSearchQuery = ""; // Track what we are currently showing
+  int _currentPage = 1;
 
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.8) {
-        if (!_isLoading) {
-          _loadFullFeed();
-        }
-      }
-    });
-  }
+  bool _isLoading = false;
 
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
@@ -106,16 +97,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     },
   ];
 
-  int _currentPage = 1;
+  //In Flutter, functions that interact with controllers (like _scrollController) or update the UI (via setState) must stay inside the state class.
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
-  bool _isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    _loadFullFeed(); // Load the first page
+    // Listen to scroll movements
+    _scrollController.addListener(() {
+      // If we are at 80% of the scroll height, load more!
 
-  final ScrollController _scrollController = ScrollController();
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoading) {
+          _loadFullFeed();
+        }
+      }
+    });
+  }
 
-  Future<void> _loadFullFeed() async {
+  // Unified loading function to handle both feed and search
+  Future<void> _loadFullFeed({String? query, bool isNewSearch = false}) async {
     setState(() => _isLoading = true);
+    if (isNewSearch) {
+      _currentPage = 1;
+      _currentSearchQuery = query ?? "";
+    }
     List<Map<String, dynamic>> newItems = [];
+    // If query is empty, use your default menu, otherwise search specifically for that term
+    final itemsToFetch = _currentSearchQuery.isEmpty
+        ? _coffeeMenu
+        : [
+            {'name': _currentSearchQuery, 'status': 'available'},
+          ];
+    for (var drink in itemsToFetch) {
+      try {
+        List<String> urls = await getCoffeeImageBatch(
+          drink['name'],
+          _currentPage,
+        );
+        for (var url in urls) {
+          newItems.add({
+            'name': drink['name'],
+            'image': url,
+            'status': drink['status'],
+            'isFavorite': false,
+          });
+        }
+      } catch (e) {
+        debugPrint("Error fetching images: $e");
+      }
+    }
 
+    /*
     for (var drink in _coffeeMenu) {
       List<String> urls = await getCoffeeImageBatch(
         drink['name'],
@@ -130,10 +173,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         });
       }
     }
-
+*/
     // UPDATED: Push to Riverpod instead of local list
     if (_currentPage == 1) {
       ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
+      _scrollToTop(); // Scroll up when showing new search results
     } else {
       ref.read(coffeeProvider.notifier).addItems(newItems..shuffle());
     }
@@ -141,7 +185,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _currentPage++;
     setState(() => _isLoading = false);
   }
-
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
@@ -155,12 +198,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose(); // Clean up
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final coffeeFeed = ref.watch(coffeeProvider);
     final cart = ref.watch(cartProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Old Market Coffee')),
-
+      appBar: AppBar(
+        // TRIGGER: Scroll to top on Title Click
+        title: GestureDetector(
+          onTap: _scrollToTop,
+          child: const Text('Old Market Coffee'),
+        ),
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.all(2.0),
@@ -219,14 +274,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Ask Gemini for a drink mood...',
-                prefixIcon: const Icon(Icons.auto_awesome), // AI icon
+                prefixIcon: const Icon(Icons.auto_awesome),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    _loadFullFeed(query: "", isNewSearch: true);
+                  },
+                ),
+                // AI icon
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onSubmitted: (value) {
-                // We will hook up Gemini here next!
-              },
+              onSubmitted: (value) =>
+                  _loadFullFeed(query: value, isNewSearch: true),
             ),
           ),
           Expanded(
@@ -247,6 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
             ),
           ),
+          if (_isLoading) const LinearProgressIndicator(color: Colors.brown),
         ],
       ),
       // NEW: DragTarget for the Cart!
@@ -259,8 +322,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           return Transform.scale(
             scale: isHovering ? 1.2 : 1.0, // Scale up when hovering!
             child: FloatingActionButton(
-              onPressed: () =>
-                  Navigator.pushNamed(context, '/checkout'),
+              onPressed: () => Navigator.pushNamed(context, '/checkout'),
               child: Badge(
                 label: Text('${cart.length}'),
                 child: const Icon(Icons.shopping_bag),
