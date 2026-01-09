@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-
+/*
+This CoffeeCard is the visual building block of your shop's grid. It currently does two main things:
+1.UI/UX: It displays the coffee image, name, and heart icon using a Stack. It also enables Drag and Drop (via the Draggable widget), which allows users to physically "pull" a coffee item into a cart or favorites area.
+2. Logic Callbacks: it uses onToggleFavorite and onAddToCart to tell the parent widget (like HomeScreen or FavsScreen) when a user interacts with it.
+*/
 class CoffeeCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onToggleFavorite;
