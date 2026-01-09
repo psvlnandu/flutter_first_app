@@ -15,10 +15,23 @@ class _SignUpFormState extends State<SignUpForm> {
   //SignUp Logic
   Future<void> _signUp() async {
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      // 1. Attempt creation
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+
+      // 2. If we reach here, it's a SUCCESS
+      if (userCredential.user != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account created successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
       // Optional: Navigate to home or show success
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(
@@ -43,16 +56,26 @@ class _SignUpFormState extends State<SignUpForm> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            TextField(decoration: InputDecoration(labelText: 'First Name')),
-            TextField(decoration: InputDecoration(labelText: 'Last Name')),
-            TextField(decoration: InputDecoration(labelText: 'Email')),
             TextField(
-              decoration: InputDecoration(labelText: 'Password'),
+              controller: _firstNameController,
+              decoration: const InputDecoration(labelText: 'First Name'),
+            ),
+            TextField(
+              controller: _lastNameController,
+              decoration: const InputDecoration(labelText: 'Last Name'),
+            ),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: _passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: _signUp,
               child: const Text("Create Account"),
             ),
           ],
