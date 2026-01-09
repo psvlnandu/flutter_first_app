@@ -1,52 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class SignUpForm extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application_1/providers/auth_provider.dart';
+
+/*
+We will wrap the Auth and Firestore calls in a single process. 
+If the Auth succeeds, we immediately create a document in the users collection 
+using the uid (Unique ID) from the new account.
+*/
+class SignUpForm extends ConsumerStatefulWidget {
   const SignUpForm({super.key});
+
   @override
-  State<SignUpForm> createState() => _SignUpFormState();
+  ConsumerState<SignUpForm> createState() => _SignUpFormState();
 }
 
-class _SignUpFormState extends State<SignUpForm> {
+class _SignUpFormState extends ConsumerState<SignUpForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  //SignUp Logic
+
   Future<void> _signUp() async {
+    ref.read(authLoadingProvider.notifier).state = true;
+
     try {
-      // 1. Attempt creation
+      // 1. Create the user in Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
 
-      // 2. If we reach here, it's a SUCCESS
+      // 2. Save additional details to Firestore using the new UID
       if (userCredential.user != null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Account created successfully!"),
-            backgroundColor: Colors.green,
-          ),
-        );
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+              'firstName': _firstNameController.text.trim(),
+              'lastName': _lastNameController.text.trim(),
+              'email': _emailController.text.trim(),
+              'createdAt': Timestamp.now(),
+            });
       }
-      // Optional: Navigate to home or show success
     } on FirebaseAuthException catch (e) {
-      String message = "";
-      if (e.code == 'weak-password') {
-        message = "The password provided is too weak.";
-      } else if (e.code == 'email-already-in-use') {
-        message = "An account already exists for that email.";
-      } else if (e.code == 'invalid-email') {
-        message = "The email address is not valid.";
-      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(e.message ?? "Sign up failed"),
+          backgroundColor: Colors.red,
+        ),
       );
-    } catch (e) {
-      debugPrint(e as String?);
+    } finally {
+      ref.read(authLoadingProvider.notifier).state = false;
     }
   }
 
@@ -61,35 +69,37 @@ class _SignUpFormState extends State<SignUpForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final isLoading = ref.watch(authLoadingProvider);
+
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            TextField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(labelText: 'First Name'),
-            ),
-            TextField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(labelText: 'Last Name'),
-            ),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _signUp,
-              child: const Text("Create Account"),
-            ),
-          ],
-        ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _firstNameController,
+            decoration: const InputDecoration(labelText: 'First Name'),
+          ),
+          TextField(
+            controller: _lastNameController,
+            decoration: const InputDecoration(labelText: 'Last Name'),
+          ),
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
+          ),
+          TextField(
+            controller: _passwordController,
+            decoration: const InputDecoration(labelText: 'Password'),
+            obscureText: true,
+          ),
+          const SizedBox(height: 20),
+          isLoading
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  onPressed: _signUp,
+                  child: const Text("Create Account"),
+                ),
+        ],
       ),
     );
   }
