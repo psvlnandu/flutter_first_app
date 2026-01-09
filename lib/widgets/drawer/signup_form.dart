@@ -34,9 +34,19 @@ class _SignUpFormState extends State<SignUpForm> {
       }
       // Optional: Navigate to home or show success
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occurred")));
+      String message = "";
+      if (e.code == 'weak-password') {
+        message = "The password provided is too weak.";
+      } else if (e.code == 'email-already-in-use') {
+        message = "An account already exists for that email.";
+      } else if (e.code == 'invalid-email') {
+        message = "The email address is not valid.";
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      debugPrint(e as String?);
     }
   }
 
