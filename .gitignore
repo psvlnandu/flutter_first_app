@@ -48,3 +48,22 @@ app.*.map.json
 #venv
 .env
 lib/env/env.g.dart
+
+# Firebase / Google Cloud configuration files
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+lib/firebase_options.dart
+
+# Web specific
+web/manifest.json
+
+# If using Firebase CLI / FlutterFire CLI
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+**/GeneratedPluginRegistrant.*
+**/firebase_app_check_debug_token.json
+
+coffeshop-app-c229c-firebase-adminsdk-fbsvc-746581e718.json

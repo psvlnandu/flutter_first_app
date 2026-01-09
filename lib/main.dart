@@ -4,9 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
 import 'screens/checkout_screen.dart';
 import 'env/env.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 void main()async{
   WidgetsFlutterBinding.ensureInitialized();
-  
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    debugPrint('Firebase initialized successfully!'); // Add this for confirmation
+  } catch (e) {
+    debugPrint('Error initializing Firebase: $e');
+    
+  }
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   // // Initialize Stripe with your TEST KEY
   // Stripe.publishableKey = Env.pktest;
   // await Stripe.instance.applySettings();
