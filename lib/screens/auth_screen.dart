@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/widgets/drawer/signIn_form.dart';
 import 'package:flutter_application_1/widgets/drawer/signup_form.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_application_1/providers/auth_provider.dart';
 
 /*
 Contains tabs
@@ -20,9 +22,16 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, Widget ref) {
     final user = FirebaseAuth.instance.currentUser;
-
+    // This listens for state changes and triggers the SnackBar
+    ref.listen(authProvider, (previous, next) {
+      if (previous?.value != null && next.value == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Signed out!")));
+      }
+    });
     // If User is logged in, show Profile Info & Logout
     if (user != null) {
       return Scaffold(
@@ -49,12 +58,22 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 30),
               ElevatedButton.icon(
-                onPressed: () => FirebaseAuth.instance.signOut(),
+                onPressed: () async {
+                  // 1. Capture the messenger before the async gap
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  await FirebaseAuth.instance.signOut();
+
+                  // 2. Show the snackbar
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text("Logged out successfully"),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.logout),
                 label: const Text("Logout"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50,
-                ),
               ),
             ],
           ),
