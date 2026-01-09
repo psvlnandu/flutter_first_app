@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/drawer/AuthWrapper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
 import 'screens/checkout_screen.dart';
@@ -22,7 +23,7 @@ void main()async{
   // Stripe.publishableKey = Env.pktest;
   // await Stripe.instance.applySettings();
 
-  runApp(
+ runApp(
     const ProviderScope(
       // This enables Riverpod for the whole app
       child: MyApp(),
@@ -54,9 +55,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+      home: const AuthWrapper(),
       initialRoute: '/',
       routes: {
-        '/': (context) => const HomeScreen(),
+        // '/': (context) => const HomeScreen(),
         '/favs': (context) => const FavsScreen(),
         '/checkout': (context) => const CheckoutScreen(),
         '/profile':(context)=>const AuthScreen(),
