@@ -14,7 +14,7 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
+        title: const Text('Account'),
         centerTitle: true,
         elevation: 0,
       ),
