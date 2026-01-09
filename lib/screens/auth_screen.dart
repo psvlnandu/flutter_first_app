@@ -11,7 +11,6 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   @override
-  @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       // 1. Wrap everything in the controller
