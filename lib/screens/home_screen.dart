@@ -217,33 +217,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: _scrollToTop,
           child: const Text('Old Market Coffee'),
         ),
+
         actions: [
           profileAsync.when(
             data: (data) {
               if (data == null) return const SizedBox.shrink();
+
               return Padding(
                 padding: const EdgeInsets.only(right: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      "Hey, ${data['firstName'] ?? 'User'}",
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                child: InkWell(
+                  // 1. Wrap in InkWell for tap functionality
+                  onTap: () {
+                    // 2. Navigate to the AuthScreen (Profile view)
+                    Navigator.pushNamed(context, '/profile');
+                  },
+                  borderRadius: BorderRadius.circular(
+                    20,
+                  ), // Keeps ripple circular
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                      vertical: 4.0,
                     ),
-                    const SizedBox(width: 8),
-                    const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.brown,
-                      child: Icon(Icons.person, size: 18, color: Colors.white),
+                    child: Row(
+                      children: [
+                        Text(
+                          "Hey, ${data['firstName'] ?? 'User'}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.brown, // Matches your theme
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.brown.shade100,
+                          child: Text(
+                            data['firstName']?[0].toUpperCase() ?? 'U',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.brown,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },
-            loading: () =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            loading: () => const SizedBox.shrink(),
             error: (_, __) => const Icon(Icons.error_outline),
           ),
         ],
