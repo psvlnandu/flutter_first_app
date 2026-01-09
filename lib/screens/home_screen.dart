@@ -1,5 +1,6 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/providers/auth_provider.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
@@ -208,6 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final coffeeFeed = ref.watch(coffeeProvider);
     final cart = ref.watch(cartProvider);
+    final profileAsync = ref.watch(userProfileProvider);
     return Scaffold(
       appBar: AppBar(
         // TRIGGER: Scroll to top on Title Click
@@ -215,6 +217,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: _scrollToTop,
           child: const Text('Old Market Coffee'),
         ),
+        actions: [
+          profileAsync.when(
+            data: (data) {
+              if (data == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: Row(
+                  children: [
+                    Text(
+                      "Hey, ${data['firstName'] ?? 'User'}",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.brown,
+                      child: Icon(Icons.person, size: 18, color: Colors.white),
+                    ),
+                  ],
+                ),
+              );
+            },
+            loading: () =>
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (_, __) => const Icon(Icons.error_outline),
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
