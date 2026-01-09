@@ -16,16 +16,29 @@ class _SignInFormState extends State<SignInForm> {
   Future<void> _signIn() async {
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential=await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+      // 2. If we reach here, it's a SUCCESS
+      if (userCredential.user != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Signed In successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
       // Success! AuthWrapper will now automatically switch to HomeScreen.
     } on FirebaseAuthException catch (e) {
       String message = "Login failed";
-      if (e.code == 'user-not-found') message = "No user found for that email.";
-      else if (e.code == 'wrong-password') message = "Wrong password provided.";
-      else if (e.code == 'invalid-email') message = "Invalid email format.";
+      if (e.code == 'user-not-found')
+        message = "No user found for that email.";
+      else if (e.code == 'wrong-password')
+        message = "Wrong password provided.";
+      else if (e.code == 'invalid-email')
+        message = "Invalid email format.";
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,10 +75,7 @@ class _SignInFormState extends State<SignInForm> {
           const SizedBox(height: 20),
           _isLoading
               ? const CircularProgressIndicator()
-              : ElevatedButton(
-                  onPressed: _signIn,
-                  child: const Text("Login"),
-                ),
+              : ElevatedButton(onPressed: _signIn, child: const Text("Login")),
         ],
       ),
     );
