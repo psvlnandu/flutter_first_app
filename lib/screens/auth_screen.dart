@@ -30,25 +30,19 @@ class _AuthScreenState extends State<AuthScreen> {
             constraints: const BoxConstraints(
               maxWidth: 600,
             ), // Standard web width
-            child: TabBarView(
-              children: [
-                // Tab 1: Sign In
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 20,
+            child: DefaultTabController(
+              length: 2, // Number of tabs
+              child: Scaffold(
+                appBar: AppBar(
+                  bottom: const TabBar(
+                    tabs: [
+                      Tab(text: "Sign In"),
+                      Tab(text: "Sign Up"),
+                    ],
                   ),
-                  child: SignInForm(), 
                 ),
-                // Tab 2: Sign Up
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 20,
-                  ),
-                  child: SignUpForm(), 
-                ),
-              ],
+                body: const TabBarView(children: [SignInForm(), SignUpForm()]),
+              ),
             ),
           ),
         ),
