@@ -8,3 +8,5 @@ a provider to manage user state
 final authStateProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
+// This tracks if any auth process (Sign In, Sign Up, or Logout) is running
+final authLoadingProvider = StateProvider<bool>((ref) => false);
