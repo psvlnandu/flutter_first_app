@@ -7,7 +7,7 @@ Commands to run after changing this file/after adding new keys to .env
 dart run build_runner build --delete-conflicting-outputs
 -> This command forces Flutter to look at your .env file again, find PK_TEST, and write the new getter into env.g.dart.
 */
-@Envied(path: './.env')
+@Envied(path: '.env')
 abstract class Env {
   // Unplash API_KEY & SECRET KEY
   @EnviedField(varName: 'API_KEY', obfuscate: true) // Obfuscate for security
