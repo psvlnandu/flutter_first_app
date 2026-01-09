@@ -11,79 +11,72 @@ Contains tabs
 -> Sign Up
 
 -> modify the AuthScreen (which contains your tabs) so that it dynamically checks the user's login status.
+NOTE:
+-> In Riverpod, the ref object (which allows you to use ref.listen or ref.watch) 
+  is only provided automatically in Consumer widgets. So always use class declaration StatefulWidget to ConsumerStatefulWidget.
+  Change State<AuthScreen> to ConsumerState<AuthScreen>.
 
 */
-class AuthScreen extends StatefulWidget {
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
-  Widget build(BuildContext context, Widget ref) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context) {
     // This listens for state changes and triggers the SnackBar
-    ref.listen(authProvider, (previous, next) {
+    ref.listen(authStateProvider, (previous, next) {
       if (previous?.value != null && next.value == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Signed out!")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Signed out successfully!"),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     });
-    // If User is logged in, show Profile Info & Logout
-    if (user != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Profile'), centerTitle: true),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                child: Icon(Icons.person, size: 40),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Welcome back,",
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              Text(
-                user.email ?? "User",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  // 1. Capture the messenger before the async gap
-                  final messenger = ScaffoldMessenger.of(context);
+    // Watch the auth state
+    final authState = ref.watch(authStateProvider);
 
-                  await FirebaseAuth.instance.signOut();
+    return authState.when(
+      data: (user) => user != null ? _buildProfileView(user) : _buildAuthTabs(),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (err, stack) => Scaffold(body: Center(child: Text("Error: $err"))),
+    );
+  }
 
-                  // 2. Show the snackbar
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text("Logged out successfully"),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text("Logout"),
-              ),
-            ],
-          ),
+  Widget _buildProfileView(User user) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile'), centerTitle: true),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
+            const SizedBox(height: 20),
+            Text("Welcome back,", style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              user.email ?? "User",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton.icon(
+              onPressed: () => FirebaseAuth.instance.signOut(),
+              icon: const Icon(Icons.logout),
+              label: const Text("Logout"),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    // If NOT logged in, show your existing Tab logic
+  Widget _buildAuthTabs() {
     return DefaultTabController(
-      // 1. Wrap everything in the controller
       length: 2,
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -92,13 +85,10 @@ class _AuthScreenState extends State<AuthScreen> {
           ).textTheme.apply(fontFamily: 'coolvetica'),
         ),
         child: Scaffold(
-          // 2. Use ONLY one Scaffold
           appBar: AppBar(
             title: const Text('Account'),
             centerTitle: true,
-            elevation: 0,
             bottom: const TabBar(
-              // 3. TabBar goes here
               tabs: [
                 Tab(text: "Sign In"),
                 Tab(text: "Sign Up"),
@@ -108,10 +98,7 @@ class _AuthScreenState extends State<AuthScreen> {
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: const TabBarView(
-                // 4. TabBarView goes in the body
-                children: [SignInForm(), SignUpForm()],
-              ),
+              child: const TabBarView(children: [SignInForm(), SignUpForm()]),
             ),
           ),
         ),
@@ -119,3 +106,4 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 }
+
