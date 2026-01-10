@@ -40,6 +40,7 @@ class _FavsScreenState extends ConsumerState<FavsScreen> {
               final item = favItems[index];
               return CoffeeCard(
                 item: item,
+                isFavorite: true,
                 // Pass the Firestore logic here
                 onToggleFavorite: () => _handleToggle(user?.uid, item),
                 onAddToCart: () => {},
