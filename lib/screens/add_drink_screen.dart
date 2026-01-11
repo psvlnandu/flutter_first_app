@@ -5,9 +5,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as ref;
+
+import 'package:image_picker/image_picker.dart';
 
 class AddDrinkScreen extends ConsumerStatefulWidget {
+  const AddDrinkScreen({super.key}); // Good practice to include key
   @override
   _AddDrinkScreenState createState() => _AddDrinkScreenState();
 }
@@ -19,12 +21,30 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
   final _notesController = TextEditingController();
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) setState(() => _selectedImage = File(pickedFile.path));
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (pickedFile != null)
+      setState(() => _selectedImage = File(pickedFile.path));
   }
 
+ Widget starRating({required double rating, required Function(double) onRatingChanged}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return IconButton( // Added IconButton so it's actually clickable
+          icon: Icon(
+            index < rating ? Icons.star : Icons.star_border,
+            color: Colors.amber,
+          ),
+          onPressed: () => onRatingChanged(index + 1.0),
+        );
+      }),
+    );
+  }
   @override
   Widget build(BuildContext context) {
+    // This 'ref' now refers to the Riverpod WidgetRef, not the http package
     final state = ref.watch(drinkEntryProvider);
 
     return Scaffold(
@@ -38,19 +58,36 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
               GestureDetector(
                 onTap: _pickImage,
                 child: _selectedImage == null
-                    ? Container(height: 200, color: Colors.grey[200], child: const Icon(Icons.add_a_photo))
-                    : Image.file(_selectedImage!, height: 200, width: double.infinity, fit: BoxFit.cover),
+                    ? Container(
+                        height: 200,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.add_a_photo),
+                      )
+                    : Image.file(
+                        _selectedImage!,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
               ),
               const SizedBox(height: 20),
               // Reuse your Google Maps Autocomplete widget here
               TextField(
                 controller: _locationController,
-                decoration: const InputDecoration(labelText: "Location", suffixIcon: Icon(Icons.map)),
+                decoration: const InputDecoration(
+                  labelText: "Location",
+                  suffixIcon: Icon(Icons.map),
+                ),
               ),
-              StarRating(rating: _rating, onRatingChanged: (val) => setState(() => _rating = val)),
+              starRating(
+                rating: _rating,
+                onRatingChanged: (val) => setState(() => _rating = val),
+              ),
               TextField(
                 controller: _notesController,
-                decoration: const InputDecoration(labelText: "Notes (Optional)"),
+                decoration: const InputDecoration(
+                  labelText: "Notes (Optional)",
+                ),
                 maxLines: 3,
               ),
               const SizedBox(height: 30),
@@ -62,7 +99,10 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                     rating: _rating,
                     notes: _notesController.text,
                   );
-                  ref.read(drinkEntryProvider.notifier).saveEntry(entry).then((_) => Navigator.pop(context));
+                  ref
+                      .read(drinkEntryProvider.notifier)
+                      .saveEntry(entry)
+                      .then((_) => Navigator.pop(context));
                 },
                 child: const Text("Save to Album"),
               ),
