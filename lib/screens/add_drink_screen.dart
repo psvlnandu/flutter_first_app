@@ -50,6 +50,21 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<void>>(drinkEntryProvider, (previous, next) {
+      next.whenOrNull(
+        data: (_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Drink saved successfully!')),
+          );
+          // Navigator.pop(context); // You can also close the screen here
+        },
+        error: (error, stack) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $error')));
+        },
+      );
+    });
     // This 'ref' now refers to the Riverpod WidgetRef, not the http package
     final state = ref.watch(drinkEntryProvider);
 
