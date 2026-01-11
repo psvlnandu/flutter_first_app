@@ -24,8 +24,9 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
     final pickedFile = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-    if (pickedFile != null)
+    if (pickedFile != null) {
       setState(() => _selectedImage = File(pickedFile.path));
+    }
   }
 
   Widget starRating({

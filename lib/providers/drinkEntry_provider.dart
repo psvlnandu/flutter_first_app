@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 final drinkEntryProvider =
     StateNotifierProvider<DrinkEntryNotifier, AsyncValue<void>>((ref) {
@@ -8,11 +10,34 @@ final drinkEntryProvider =
 class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
   DrinkEntryNotifier() : super(const AsyncValue.data(null));
 
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   Future<void> saveEntry(DrinkEntry entry) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      state = AsyncValue.error("User not logged in", StackTrace.current);
+      return;
+    }
     state = const AsyncValue.loading();
     try {
-      // Simulate API/DB call
-      await Future.delayed(const Duration(seconds: 2));
+      
+      final docRef = _db
+          .collection('users')
+          .doc(user.uid)
+          .collection('entries')
+          .doc(); // Generates a unique ID automatically
+
+      // 2. Save the data
+      await docRef.set({
+        'id': docRef.id,
+        'imagePath': entry.imagePath, // Note: On web, this is a Blob URL
+        'location': entry.location,
+        'rating': entry.rating,
+        'notes': entry.notes ?? "",
+        'isFavorite': entry.isFavorite,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
