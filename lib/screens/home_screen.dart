@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/auth_provider.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
+import 'package:flutter_application_1/providers/favs_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -21,6 +22,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController =
       TextEditingController(); // Added for search
+      
   String _currentSearchQuery = ""; // Track what we are currently showing
   int _currentPage = 1;
 
@@ -142,14 +144,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ];
     for (var drink in itemsToFetch) {
       try {
-        List<String> urls = await getCoffeeImageBatch(
-          drink['name'],
-          _currentPage,
-        );
-        for (var url in urls) {
+        List<Map<String, String>> images = await getCoffeeImageBatch(
+      drink['name'],
+      _currentPage,
+    );
+        for (var img in images) {
           newItems.add({
+            'id': img['id'],
             'name': drink['name'],
-            'image': url,
+            'image': img['url'],
             'status': drink['status'],
             'isFavorite': false,
           });
@@ -210,6 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final coffeeFeed = ref.watch(coffeeProvider);
     final cart = ref.watch(cartProvider);
     final profileAsync = ref.watch(userProfileProvider);
+    final favItems = ref.watch(userFavoritesProvider).value ?? [];
     return Scaffold(
       appBar: AppBar(
         // TRIGGER: Scroll to top on Title Click
@@ -358,11 +362,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (index == coffeeFeed.length)
                   return const CircularProgressIndicator();
                 final item = coffeeFeed[index];
+                final isFavorite = favItems.any((fav) => fav['id'] == item['id']);
                 return CoffeeCard(
                   item: item,
-                  onToggleFavorite: () =>
-                      ref.read(coffeeProvider.notifier).toggleFavorite(item),
-                  onAddToCart: () => _addToCart(item),
+                  isFavorite:
+                      isFavorite, // This is now synced with Firebase!
+                  onToggleFavorite: () => ref
+                      .read(coffeeProvider.notifier)
+                      .toggleFirebaseFav(item),
+                  onAddToCart: () => ref
+                      .read(coffeeProvider.notifier)
+                      .addToFirebaseCart(item),
                 );
               },
             ),
@@ -393,7 +403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-Future<List<String>> getCoffeeImageBatch(String query, int page) async {
+Future<List<Map<String, String>>> getCoffeeImageBatch(String query, int page) async {
   final String api_key = Env.apiKey; // Use your actual key
 
   // Notice 'per_page=10' in the URL - that's the key change!
@@ -411,13 +421,16 @@ Future<List<String>> getCoffeeImageBatch(String query, int page) async {
 
     // Unsplash returns a list of results; we take the first one's 'regular' URL
 
-    List<String> urls = [];
+    List<Map<String, String>> items = [];
 
     for (var result in data['results']) {
-      urls.add(result['urls']['regular']);
+      items.add({
+        'id': result['id'], // Capture the unique Unsplash ID
+        'url': result['urls']['regular'],
+      });
     }
 
-    return urls;
+    return items;
   } else {
     throw Exception('Failed to load photos from Unsplash');
   }

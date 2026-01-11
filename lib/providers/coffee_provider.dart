@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // This manages the List of Coffee Maps
@@ -6,8 +8,65 @@ The coffeeProvider manages the Product Catalog (fetching from Unsplash),
 while the cartProvider manages User Selection.
 
 */
+final List<Map<String, dynamic>> initialCoffeeList = [];
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
-  CoffeeNotifier() : super([]);
+  CoffeeNotifier() : super(initialCoffeeList);
+  // Firebase Firestore Instance
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> toggleFirebaseFav(Map<String, dynamic> item) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final docRef = _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(item['id']);
+
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      await docRef.delete();
+    } else {
+      await docRef.set({
+        'id': item['id'],
+        'name': item['name'],
+        'image': item['image'],
+        'price': item['price'],
+        'addedAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  // ADD TO FIREBASE CART
+  Future<void> addToFirebaseCart(Map<String, dynamic> item) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final docRef = _db
+        .collection('users')
+        .doc(user.uid)
+        .collection('cart')
+        .doc(item['id']);
+
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      // If it's already there, just bump the number
+      await docRef.update({'quantity': FieldValue.increment(1)});
+    } else {
+      // New item entry
+      await docRef.set({
+        'id': item['id'],
+        'name': item['name'],
+        'image': item['image'],
+        'price': item['price'],
+        'quantity': 1,
+      });
+    }
+  }
 
   // Initialize with the data from your API
   void setFeed(List<Map<String, dynamic>> newFeed) {
@@ -32,6 +91,7 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
 }
 
 // This is the global "hook" we use in our screens
-final coffeeProvider = StateNotifierProvider<CoffeeNotifier, List<Map<String, dynamic>>>((ref) {
-  return CoffeeNotifier();
-});
+final coffeeProvider =
+    StateNotifierProvider<CoffeeNotifier, List<Map<String, dynamic>>>((ref) {
+      return CoffeeNotifier();
+    });
