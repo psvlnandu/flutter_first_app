@@ -27,16 +27,18 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       // 1. Upload Image to Firebase Storage
       String downloadUrl = "";
+
       if (entry.imagePath.isNotEmpty) {
         final storageRef = _storage.ref().child(
           'users/${user.uid}/drinks/${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
 
-        // Handle Web vs Mobile upload
         if (kIsWeb) {
-          // On web, we upload the raw bytes from the path (blob)
-          await storageRef.putData(await File(entry.imagePath).readAsBytes());
+          // FIX: Use 'http' to get bytes from the blob URL instead of 'File'
+          final response = await http.get(Uri.parse(entry.imagePath));
+          await storageRef.putData(response.bodyBytes);
         } else {
+          // Mobile can still use File
           await storageRef.putFile(File(entry.imagePath));
         }
         downloadUrl = await storageRef.getDownloadURL();
