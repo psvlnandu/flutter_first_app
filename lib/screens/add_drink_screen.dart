@@ -1,7 +1,7 @@
 // screens/add_drink_screen.dart
 
 import 'dart:io';
-
+import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,11 +28,15 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
       setState(() => _selectedImage = File(pickedFile.path));
   }
 
- Widget starRating({required double rating, required Function(double) onRatingChanged}) {
+  Widget starRating({
+    required double rating,
+    required Function(double) onRatingChanged,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
-        return IconButton( // Added IconButton so it's actually clickable
+        return IconButton(
+          // Added IconButton so it's actually clickable
           icon: Icon(
             index < rating ? Icons.star : Icons.star_border,
             color: Colors.amber,
@@ -42,6 +46,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
       }),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     // This 'ref' now refers to the Riverpod WidgetRef, not the http package
@@ -60,16 +65,25 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                 child: _selectedImage == null
                     ? Container(
                         height: 200,
+                        width: double.infinity,
                         color: Colors.grey[200],
                         child: const Icon(Icons.add_a_photo),
                       )
+                    : kIsWeb
+                    ? Image.network(
+                        _selectedImage!.path, // On web, this is a Blob URL
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
                     : Image.file(
-                        _selectedImage!,
+                        _selectedImage!, // On mobile, we use the file system
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
               ),
+
               const SizedBox(height: 20),
               // Reuse your Google Maps Autocomplete widget here
               TextField(
