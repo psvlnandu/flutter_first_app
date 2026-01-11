@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 final drinkEntryProvider =
     StateNotifierProvider<DrinkEntryNotifier, AsyncValue<void>>((ref) {
@@ -11,6 +14,7 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
   DrinkEntryNotifier() : super(const AsyncValue.data(null));
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> saveEntry(DrinkEntry entry) async {
@@ -21,21 +25,35 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
     }
     state = const AsyncValue.loading();
     try {
-      
+      // 1. Upload Image to Firebase Storage
+      String downloadUrl = "";
+      if (entry.imagePath.isNotEmpty) {
+        final storageRef = _storage.ref().child(
+          'users/${user.uid}/drinks/${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+
+        // Handle Web vs Mobile upload
+        if (kIsWeb) {
+          // On web, we upload the raw bytes from the path (blob)
+          await storageRef.putData(await File(entry.imagePath).readAsBytes());
+        } else {
+          await storageRef.putFile(File(entry.imagePath));
+        }
+        downloadUrl = await storageRef.getDownloadURL();
+      }
+      // 2. Save Metadata + Download URL to Firestore
       final docRef = _db
           .collection('users')
           .doc(user.uid)
           .collection('entries')
-          .doc(); // Generates a unique ID automatically
+          .doc();
 
-      // 2. Save the data
       await docRef.set({
         'id': docRef.id,
-        'imagePath': entry.imagePath, // Note: On web, this is a Blob URL
+        'imageUrl': downloadUrl, // The permanent link
         'location': entry.location,
         'rating': entry.rating,
         'notes': entry.notes ?? "",
-        'isFavorite': entry.isFavorite,
         'createdAt': FieldValue.serverTimestamp(),
       });
       state = const AsyncValue.data(null);

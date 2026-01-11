@@ -108,16 +108,22 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
               const SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
+                  if (_selectedImage == null) {
+                    // Show a snackbar or alert: "Please pick an image!"
+                    return;
+                  }
                   final entry = DrinkEntry(
-                    imagePath: _selectedImage?.path ?? '',
+                    imagePath: _selectedImage!
+                        .path, // Safe because of the null check above
                     location: _locationController.text,
                     rating: _rating,
                     notes: _notesController.text,
                   );
-                  ref
-                      .read(drinkEntryProvider.notifier)
-                      .saveEntry(entry)
-                      .then((_) => Navigator.pop(context));
+                  ref.read(drinkEntryProvider.notifier).saveEntry(entry).then((
+                    _,
+                  ) {
+                    if (mounted) Navigator.pop(context);
+                  });
                 },
                 child: const Text("Save to Album"),
               ),
