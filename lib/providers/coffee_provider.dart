@@ -15,21 +15,34 @@ final List<Map<String, dynamic>> initialCoffeeList = [];
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   CoffeeNotifier() : super(initialCoffeeList);
 
+  bool _isLoading = false;
+  int _currentPage = 1;
+  String _lastQuery = "";
+  bool get isLoading => _isLoading;
   // New: Centralized search logic
   Future<void> fetchCoffeeImages(
     String query, {
-    int page = 1,
+
     bool isNewSearch = false,
   }) async {
+    if (_isLoading) return;
+    final effectiveQuery = query.trim().isEmpty ? "Coffee Shop" : query;
     try {
-      // Use your existing helper function to get images from Unsplash
-      final images = await getCoffeeImageBatch(query, page);
+      _isLoading = true;
+
+      if (isNewSearch) {
+        _currentPage = 1;
+        _lastQuery = effectiveQuery;
+      }
+
+      // Use the internal trackers for the API call
+      final images = await getCoffeeImageBatch(effectiveQuery, _currentPage);
 
       final newItems = images
           .map(
             (img) => {
               'id': img['id'],
-              'name': query,
+              'name': _lastQuery.isEmpty ? "Coffee" : _lastQuery,
               'image': img['url'],
               'status': 'available',
               'isFavorite': false,
@@ -42,8 +55,14 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
       } else {
         state = [...state, ...newItems]..shuffle();
       }
+
+      _currentPage++; // Increment for the next "load more" trigger
     } catch (e) {
       debugPrint("Error fetching images in Provider: $e");
+    } finally {
+      _isLoading = false;
+      // We force a tiny state update if needed to notify listeners of loading change
+      state = [...state];
     }
   }
 

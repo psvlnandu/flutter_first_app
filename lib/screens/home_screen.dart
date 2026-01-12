@@ -115,64 +115,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadFullFeed(); // Load the first page
-    // Listen to scroll movements
+
+    // Initial load: Call the provider instead of local _loadFullFeed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(coffeeProvider.notifier)
+          .fetchCoffeeImages("", isNewSearch: true);
+    });
     _scrollController.addListener(() {
       // If we are at 80% of the scroll height, load more!
-
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent * 0.8) {
-        if (!_isLoading) {
-          _loadFullFeed();
+        // Check if the provider is already loading to avoid duplicate calls
+        final coffeeNotifier = ref.read(coffeeProvider.notifier);
+        if (!coffeeNotifier.isLoading) {
+          // Fetch next page (you might want to track page count in your provider)
+          coffeeNotifier.fetchCoffeeImages("");
         }
       }
     });
-  }
-
-  // Unified loading function to handle both feed and search
-  Future<void> _loadFullFeed({String? query, bool isNewSearch = false}) async {
-    setState(() => _isLoading = true);
-    if (isNewSearch) {
-      _currentPage = 1;
-      _currentSearchQuery = query ?? "";
-    }
-    List<Map<String, dynamic>> newItems = [];
-    // If query is empty, use your default menu, otherwise search specifically for that term
-    final itemsToFetch = _currentSearchQuery.isEmpty
-        ? _coffeeMenu
-        : [
-            {'name': _currentSearchQuery, 'status': 'available'},
-          ];
-    for (var drink in itemsToFetch) {
-      try {
-        List<Map<String, String>> images = await getCoffeeImageBatch(
-          drink['name'],
-          _currentPage,
-        );
-        for (var img in images) {
-          newItems.add({
-            'id': img['id'],
-            'name': drink['name'],
-            'image': img['url'],
-            'status': drink['status'],
-            'isFavorite': false,
-          });
-        }
-      } catch (e) {
-        debugPrint("Error fetching images: $e");
-      }
-    }
-
-    // UPDATED: Push to Riverpod instead of local list
-    if (_currentPage == 1) {
-      ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
-      _scrollToTop(); // Scroll up when showing new search results
-    } else {
-      ref.read(coffeeProvider.notifier).addItems(newItems..shuffle());
-    }
-
-    _currentPage++;
-    setState(() => _isLoading = false);
   }
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
@@ -321,7 +282,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           // AI Search Bar Placeholder
-          const CoffeeSearchBar(hintText: 'Search scrapbook images...'), // CALLING IT HERE
+          const CoffeeSearchBar(
+            hintText: 'Search scrapbook images...',
+          ), // CALLING IT HERE
           Expanded(
             // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
             child: UnsplashGallery(
@@ -330,7 +293,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isDraggable: false, // Normal view here
             ),
           ),
-          if (_isLoading) const LinearProgressIndicator(color: Colors.brown),
+          // Use the loading state from your provider for the bottom indicator
+          if (ref.watch(coffeeProvider.notifier).isLoading)
+            const LinearProgressIndicator(color: Colors.brown),
         ],
       ),
 
@@ -389,6 +354,7 @@ Future<List<Map<String, String>>> getCoffeeImageBatch(
 
     return items;
   } else {
+    debugPrint('Unsplash Error: ${response.statusCode} - ${response.body}');
     throw Exception('Failed to load photos from Unsplash');
   }
 }
