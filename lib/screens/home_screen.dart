@@ -28,6 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   bool _isLoading = false;
 
+// If query is empty, use your default menu.
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
       'name': 'Matcha Latte',
@@ -162,22 +163,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
-    /*
-    for (var drink in _coffeeMenu) {
-      List<String> urls = await getCoffeeImageBatch(
-        drink['name'],
-        _currentPage,
-      );
-      for (var url in urls) {
-        newItems.add({
-          'name': drink['name'],
-          'image': url,
-          'status': drink['status'],
-          'isFavorite': false, // Match the casing in your provider!
-        });
-      }
-    }
-*/
     // UPDATED: Push to Riverpod instead of local list
     if (_currentPage == 1) {
       ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
