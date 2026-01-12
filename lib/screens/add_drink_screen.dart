@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
+import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -164,7 +165,16 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
           // RIGHT SIDE: Unsplash Gallery
           Expanded(
             flex: 3, // Takes up 60% of the screen
-            child: _buildUnsplashGallery(), // We will create this helper
+            child: Column(
+              children: [
+                _buildSearchField(), // Your existing search bar logic
+                const Expanded(
+                  child: UnsplashGallery(
+                    isDraggable: true,
+                  ), // Dragging enabled!
+                ),
+              ],
+            ), // We will create this helper
           ),
         ],
       ),
