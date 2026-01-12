@@ -5,6 +5,7 @@ import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/favs_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_card.dart';
+import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'dart:convert';
@@ -28,7 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   bool _isLoading = false;
 
-// If query is empty, use your default menu.
+  // If query is empty, use your default menu.
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
       'name': 'Matcha Latte',
@@ -344,26 +345,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           Expanded(
-            child: MasonryGridView.count(
+            // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
+            child: UnsplashGallery(
               controller: _scrollController,
-              crossAxisCount: 4, // Change to 2 for better mobile visibility
-              itemCount: coffeeFeed.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == coffeeFeed.length)
-                  return const CircularProgressIndicator();
-                final item = coffeeFeed[index];
-                final isFavorite = favItems.any(
-                  (fav) => fav['id'] == item['id'],
-                );
-                return CoffeeCard(
-                  item: item,
-                  isFavorite: isFavorite, // This is now synced with Firebase!
-                  onToggleFavorite: () =>
-                      ref.read(coffeeProvider.notifier).toggleFirebaseFav(item),
-                  onAddToCart: () =>
-                      ref.read(coffeeProvider.notifier).addToFirebaseCart(item),
-                );
-              },
+              crossAxisCount: 4,
+              isDraggable: false, // Normal view here
             ),
           ),
           if (_isLoading) const LinearProgressIndicator(color: Colors.brown),
