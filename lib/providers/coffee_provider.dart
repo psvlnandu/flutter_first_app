@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/screens/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // This manages the List of Coffee Maps
@@ -9,8 +11,42 @@ while the cartProvider manages User Selection.
 
 */
 final List<Map<String, dynamic>> initialCoffeeList = [];
+
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   CoffeeNotifier() : super(initialCoffeeList);
+
+  // New: Centralized search logic
+  Future<void> fetchCoffeeImages(
+    String query, {
+    int page = 1,
+    bool isNewSearch = false,
+  }) async {
+    try {
+      // Use your existing helper function to get images from Unsplash
+      final images = await getCoffeeImageBatch(query, page);
+
+      final newItems = images
+          .map(
+            (img) => {
+              'id': img['id'],
+              'name': query,
+              'image': img['url'],
+              'status': 'available',
+              'isFavorite': false,
+            },
+          )
+          .toList();
+
+      if (isNewSearch) {
+        state = newItems..shuffle();
+      } else {
+        state = [...state, ...newItems]..shuffle();
+      }
+    } catch (e) {
+      debugPrint("Error fetching images in Provider: $e");
+    }
+  }
+
   // Firebase Firestore Instance
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;

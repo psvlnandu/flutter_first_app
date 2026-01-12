@@ -5,10 +5,11 @@ import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
+import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
 import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/screens/home_screen.dart';
 
 class AddDrinkScreen extends ConsumerStatefulWidget {
   const AddDrinkScreen({super.key}); // Good practice to include key
@@ -167,7 +168,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
             flex: 3, // Takes up 60% of the screen
             child: Column(
               children: [
-                _buildSearchField(), // Your existing search bar logic
+                const CoffeeSearchBar(hintText: 'Search scrapbook images...'), // CALLING IT HERE // Your existing search bar logic
                 const Expanded(
                   child: UnsplashGallery(
                     isDraggable: true,

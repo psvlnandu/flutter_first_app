@@ -4,10 +4,9 @@ import 'package:flutter_application_1/providers/auth_provider.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/favs_provider.dart';
-import 'package:flutter_application_1/widgets/coffee_card.dart';
+import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
 import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../env/env.dart'; // Import your Env class
@@ -322,28 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           // AI Search Bar Placeholder
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Ask Gemini for a drink mood...',
-                prefixIcon: const Icon(Icons.auto_awesome),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _loadFullFeed(query: "", isNewSearch: true);
-                  },
-                ),
-                // AI icon
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              onSubmitted: (value) =>
-                  _loadFullFeed(query: value, isNewSearch: true),
-            ),
-          ),
+          const CoffeeSearchBar(hintText: 'Search scrapbook images...'), // CALLING IT HERE
           Expanded(
             // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
             child: UnsplashGallery(
@@ -356,7 +334,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
 
-      // NEW: DragTarget for the Cart!
+      // DragTarget for the Cart!
       floatingActionButton: DragTarget<Map<String, dynamic>>(
         onAccept: (item) => ref.read(cartProvider.notifier).addToCart(item),
         builder: (context, candidateData, rejectedData) {
