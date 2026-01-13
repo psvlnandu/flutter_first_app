@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/screens/home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // This manages the List of Coffee Maps
@@ -9,8 +11,65 @@ while the cartProvider manages User Selection.
 
 */
 final List<Map<String, dynamic>> initialCoffeeList = [];
+
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   CoffeeNotifier() : super(initialCoffeeList);
+
+  int _currentPage = 1;
+  bool isLoading = false;
+  String lastQuery = "";
+  // Unified loading function to handle both feed and search
+  Future<void> searchCoffee(String query, {bool isNewSearch = false}) async {
+    if(isLoading)return;
+    isLoading = true;
+    if (isNewSearch) {
+      _currentPage = 1;
+      // Save the query so we know what to 'load more' of later
+      lastQuery = query.isEmpty ? "Coffee" : query;
+    }
+    // // Use a default search if the query is empty
+    // final searchTerm = query.isEmpty ? "Coffee" : query;
+
+    // List<Map<String, dynamic>> newItems = [];
+    // If query is empty, use your default menu, otherwise search specifically for that term
+    // final itemsToFetch = _currentSearchQuery.isEmpty
+    //     ? _coffeeMenu
+    //     : [
+    //         {'name': _currentSearchQuery, 'status': 'available'},
+    //       ];
+
+    try {
+      // Calling your existing Unsplash helper
+      List<Map<String, String>> images = await getCoffeeImageBatch(
+        lastQuery,
+        _currentPage,
+      );
+
+      final newItems = images
+          .map(
+            (img) => {
+              'id': img['id'],
+              'name': lastQuery,
+              'image': img['url'],
+              'status': 'available',
+              'isFavorite': false,
+            },
+          )
+          .toList();
+
+      if (isNewSearch) {
+        state = newItems..shuffle();
+      } else {
+        state = [...state, ...newItems]..shuffle();
+      }
+      _currentPage++;
+    } catch (e) {
+      debugPrint("Error: $e");
+    } finally {
+      isLoading = false;
+    }
+  }
+
   // Firebase Firestore Instance
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;

@@ -4,9 +4,9 @@ import 'package:flutter_application_1/providers/auth_provider.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/favs_provider.dart';
-import 'package:flutter_application_1/widgets/coffee_card.dart';
+import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
+import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../env/env.dart'; // Import your Env class
@@ -28,6 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   bool _isLoading = false;
 
+  // If query is empty, use your default menu.
   final List<Map<String, dynamic>> _coffeeMenu = [
     {
       'name': 'Matcha Latte',
@@ -122,12 +123,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent * 0.8) {
         if (!_isLoading) {
+          debugPrint('HomeScreen-$_isLoading');
           _loadFullFeed();
         }
       }
     });
   }
-
+  
   // Unified loading function to handle both feed and search
   Future<void> _loadFullFeed({String? query, bool isNewSearch = false}) async {
     setState(() => _isLoading = true);
@@ -162,22 +164,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
 
-    /*
-    for (var drink in _coffeeMenu) {
-      List<String> urls = await getCoffeeImageBatch(
-        drink['name'],
-        _currentPage,
-      );
-      for (var url in urls) {
-        newItems.add({
-          'name': drink['name'],
-          'image': url,
-          'status': drink['status'],
-          'isFavorite': false, // Match the casing in your provider!
-        });
-      }
-    }
-*/
     // UPDATED: Push to Riverpod instead of local list
     if (_currentPage == 1) {
       ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
@@ -189,6 +175,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _currentPage++;
     setState(() => _isLoading = false);
   }
+
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
@@ -344,48 +331,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 prefixIcon: const Icon(Icons.auto_awesome),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () {
+                  onPressed: () { //clear button
                     _searchController.clear();
-                    _loadFullFeed(query: "", isNewSearch: true);
+                    ref
+                        .read(coffeeProvider.notifier)
+                        .searchCoffee("", isNewSearch: true);
                   },
                 ),
+
                 // AI icon
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onSubmitted: (value) =>
-                  _loadFullFeed(query: value, isNewSearch: true),
+              onSubmitted: (value) => ref
+                  .read(coffeeProvider.notifier)
+                  .searchCoffee(value, isNewSearch: true),
+              // _loadFullFeed(query: value, isNewSearch: true),
             ),
           ),
           Expanded(
-            child: MasonryGridView.count(
+            // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
+            child: UnsplashGallery(
               controller: _scrollController,
-              crossAxisCount: 4, // Change to 2 for better mobile visibility
-              itemCount: coffeeFeed.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == coffeeFeed.length)
-                  return const CircularProgressIndicator();
-                final item = coffeeFeed[index];
-                final isFavorite = favItems.any(
-                  (fav) => fav['id'] == item['id'],
-                );
-                return CoffeeCard(
-                  item: item,
-                  isFavorite: isFavorite, // This is now synced with Firebase!
-                  onToggleFavorite: () =>
-                      ref.read(coffeeProvider.notifier).toggleFirebaseFav(item),
-                  onAddToCart: () =>
-                      ref.read(coffeeProvider.notifier).addToFirebaseCart(item),
-                );
-              },
+              crossAxisCount: 4,
+              isDraggable: false, // Normal view here
             ),
           ),
-          if (_isLoading) const LinearProgressIndicator(color: Colors.brown),
+          // Use the loading state from your provider for the bottom indicator
+          if (ref.watch(coffeeProvider.notifier).isLoading)
+            const LinearProgressIndicator(color: Colors.brown),
         ],
       ),
 
-      // NEW: DragTarget for the Cart!
+      // DragTarget for the Cart!
       floatingActionButton: DragTarget<Map<String, dynamic>>(
         onAccept: (item) => ref.read(cartProvider.notifier).addToCart(item),
         builder: (context, candidateData, rejectedData) {
@@ -440,6 +419,7 @@ Future<List<Map<String, String>>> getCoffeeImageBatch(
 
     return items;
   } else {
+    debugPrint('Unsplash Error: ${response.statusCode} - ${response.body}');
     throw Exception('Failed to load photos from Unsplash');
   }
 }

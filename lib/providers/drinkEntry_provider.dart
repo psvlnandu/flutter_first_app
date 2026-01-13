@@ -24,27 +24,34 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error("User not logged in", StackTrace.current);
       return;
     }
-    state = const AsyncValue.loading();
-    try {
-      // 1. Upload Image to Firebase Storage
-      String downloadUrl = "";
 
-      if (entry.imagePath.isNotEmpty) {
+    state = const AsyncValue.loading();
+
+    try {
+      // 1. Determine if we need to upload to Storage or use a direct URL
+      String finalImageUrl = "";
+      bool isLocalFile = !entry.imagePath.startsWith('http');
+
+      if (isLocalFile && entry.imagePath.isNotEmpty) {
+        // HANDLE LOCAL UPLOAD (Mobile File or Web Blob)
         final storageRef = _storage.ref().child(
           'users/${user.uid}/drinks/${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
 
         if (kIsWeb) {
-          // FIX: Use 'http' to get bytes from the blob URL instead of 'File'
           final response = await http.get(Uri.parse(entry.imagePath));
           await storageRef.putData(response.bodyBytes);
         } else {
-          // Mobile can still use File
           await storageRef.putFile(File(entry.imagePath));
         }
-        downloadUrl = await storageRef.getDownloadURL();
+        finalImageUrl = await storageRef.getDownloadURL();
+      } else {
+        // HANDLE UNPLASH / REMOTE URL
+        // We don't upload to Storage; we just save the direct link
+        finalImageUrl = entry.imagePath;
       }
-      // 2. Save Metadata + Download URL to Firestore
+
+      // 2. Save Metadata + finalImageUrl to Firestore
       final docRef = _db
           .collection('users')
           .doc(user.uid)
@@ -53,12 +60,14 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
 
       await docRef.set({
         'id': docRef.id,
-        'imageUrl': downloadUrl, // The permanent link
+        'imageUrl': finalImageUrl,
         'location': entry.location,
         'rating': entry.rating,
         'notes': entry.notes ?? "",
+        'isFavorite': entry.isFavorite,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
