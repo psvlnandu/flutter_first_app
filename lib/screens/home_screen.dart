@@ -337,6 +337,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         .searchCoffee("", isNewSearch: true);
                   },
                 ),
+                
                 // AI icon
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),

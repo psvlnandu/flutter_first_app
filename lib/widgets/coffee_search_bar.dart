@@ -17,10 +17,9 @@ class CoffeeSearchBar extends ConsumerWidget {
           prefixIcon: const Icon(Icons.auto_awesome),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
         ),
-        onSubmitted: (value) {
-          // This calls the provider method we just moved!
-          ref.read(coffeeProvider.notifier).fetchCoffeeImages(value, isNewSearch: true);
-        },
+        onSubmitted: (value) => ref
+                  .read(coffeeProvider.notifier)
+                  .searchCoffee(value, isNewSearch: true),
       ),
     );
   }
