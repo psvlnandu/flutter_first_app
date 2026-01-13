@@ -15,34 +15,36 @@ final List<Map<String, dynamic>> initialCoffeeList = [];
 class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   CoffeeNotifier() : super(initialCoffeeList);
 
-  bool _isLoading = false;
   int _currentPage = 1;
-  String _lastQuery = "";
-  bool get isLoading => _isLoading;
-  // New: Centralized search logic
-  Future<void> fetchCoffeeImages(
-    String query, {
+  bool isLoading = false;
 
-    bool isNewSearch = false,
-  }) async {
-    if (_isLoading) return;
-    final effectiveQuery = query.trim().isEmpty ? "Coffee Shop" : query;
+  // Unified loading function to handle both feed and search
+  Future<void> searchCoffee(String query, {bool isNewSearch = false}) async {
+    isLoading = true;
+    if (isNewSearch) _currentPage = 1;
+    // Use a default search if the query is empty
+    final searchTerm = query.isEmpty ? "Coffee" : query;
+
+    // List<Map<String, dynamic>> newItems = [];
+    // If query is empty, use your default menu, otherwise search specifically for that term
+    // final itemsToFetch = _currentSearchQuery.isEmpty
+    //     ? _coffeeMenu
+    //     : [
+    //         {'name': _currentSearchQuery, 'status': 'available'},
+    //       ];
+
     try {
-      _isLoading = true;
-
-      if (isNewSearch) {
-        _currentPage = 1;
-        _lastQuery = effectiveQuery;
-      }
-
-      // Use the internal trackers for the API call
-      final images = await getCoffeeImageBatch(effectiveQuery, _currentPage);
+      // Calling your existing Unsplash helper
+      List<Map<String, String>> images = await getCoffeeImageBatch(
+        searchTerm,
+        _currentPage,
+      );
 
       final newItems = images
           .map(
             (img) => {
               'id': img['id'],
-              'name': _lastQuery.isEmpty ? "Coffee" : _lastQuery,
+              'name': searchTerm,
               'image': img['url'],
               'status': 'available',
               'isFavorite': false,
@@ -55,14 +57,11 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
       } else {
         state = [...state, ...newItems]..shuffle();
       }
-
-      _currentPage++; // Increment for the next "load more" trigger
+      _currentPage++;
     } catch (e) {
-      debugPrint("Error fetching images in Provider: $e");
+      debugPrint("Error: $e");
     } finally {
-      _isLoading = false;
-      // We force a tiny state update if needed to notify listeners of loading change
-      state = [...state];
+      isLoading = false;
     }
   }
 

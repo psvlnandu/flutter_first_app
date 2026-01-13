@@ -168,7 +168,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
             flex: 3, // Takes up 60% of the screen
             child: Column(
               children: [
-                const CoffeeSearchBar(hintText: 'Search scrapbook images...'), // CALLING IT HERE // Your existing search bar logic
+                // _buildSearchField(), // Your existing search bar logic
                 const Expanded(
                   child: UnsplashGallery(
                     isDraggable: true,

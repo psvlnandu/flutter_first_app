@@ -116,24 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
 
-    // Initial load: Call the provider instead of local _loadFullFeed
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(coffeeProvider.notifier)
-          .fetchCoffeeImages("", isNewSearch: true);
-    });
-    _scrollController.addListener(() {
-      // If we are at 80% of the scroll height, load more!
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.8) {
-        // Check if the provider is already loading to avoid duplicate calls
-        final coffeeNotifier = ref.read(coffeeProvider.notifier);
-        if (!coffeeNotifier.isLoading) {
-          // Fetch next page (you might want to track page count in your provider)
-          coffeeNotifier.fetchCoffeeImages("");
-        }
-      }
-    });
+    
   }
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
@@ -282,9 +265,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           // AI Search Bar Placeholder
-          const CoffeeSearchBar(
-            hintText: 'Search scrapbook images...',
-          ), // CALLING IT HERE
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Ask Gemini for a drink mood...',
+                prefixIcon: const Icon(Icons.auto_awesome),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () { //clear button
+                    _searchController.clear();
+                    ref
+                        .read(coffeeProvider.notifier)
+                        .searchCoffee("", isNewSearch: true);
+                  },
+                ),
+                // AI icon
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onSubmitted: (value) => ref
+                  .read(coffeeProvider.notifier)
+                  .searchCoffee(value, isNewSearch: true),
+              // _loadFullFeed(query: value, isNewSearch: true),
+            ),
+          ),
           Expanded(
             // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
             child: UnsplashGallery(
