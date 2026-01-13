@@ -18,6 +18,32 @@ class AddDrinkScreen extends ConsumerStatefulWidget {
 }
 
 class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
+  final ScrollController _scrollController = ScrollController();
+  @override
+  void initState() {
+    super.initState();
+
+    
+    _scrollController.addListener(() {
+      final notifier = ref.read(coffeeProvider.notifier);
+
+      // If we are at 80% of the scroll height and not already loading...
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!notifier.isLoading) {
+          // Trigger the next page of the current search
+          notifier.searchCoffee(notifier.lastQuery);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose(); // Always clean up controllers!
+    super.dispose();
+  }
+
   String?
   _imagePath; // we now stor string path?URL instead of File to handle both Unsplash and Local
 
@@ -73,8 +99,8 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
     });
     // This 'ref' now refers to the Riverpod WidgetRef, not the http package
     final state = ref.watch(drinkEntryProvider);
-
     final coffeeFeed = ref.watch(coffeeProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text("New Drink Album Entry")),
       body: Row(

@@ -17,11 +17,15 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
 
   int _currentPage = 1;
   bool isLoading = false;
-
+  String lastQuery = "";
   // Unified loading function to handle both feed and search
   Future<void> searchCoffee(String query, {bool isNewSearch = false}) async {
     isLoading = true;
-    if (isNewSearch) _currentPage = 1;
+    if (isNewSearch) {
+      _currentPage = 1;
+      // Save the query so we know what to 'load more' of later
+      lastQuery = query.isEmpty ? "Coffee" : query;
+    }
     // Use a default search if the query is empty
     final searchTerm = query.isEmpty ? "Coffee" : query;
 
@@ -36,7 +40,7 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
     try {
       // Calling your existing Unsplash helper
       List<Map<String, String>> images = await getCoffeeImageBatch(
-        searchTerm,
+        lastQuery,
         _currentPage,
       );
 
