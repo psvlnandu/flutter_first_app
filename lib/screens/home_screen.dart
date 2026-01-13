@@ -330,9 +330,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 prefixIcon: const Icon(Icons.auto_awesome),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () {
+                  onPressed: () { //clear button
                     _searchController.clear();
-                    _loadFullFeed(query: "", isNewSearch: true);
+                    ref
+                        .read(coffeeProvider.notifier)
+                        .searchCoffee("", isNewSearch: true);
                   },
                 ),
                 // AI icon
@@ -340,8 +342,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
-              onSubmitted: (value) =>
-                  _loadFullFeed(query: value, isNewSearch: true),
+              onSubmitted: (value) => ref
+                  .read(coffeeProvider.notifier)
+                  .searchCoffee(value, isNewSearch: true),
+              // _loadFullFeed(query: value, isNewSearch: true),
             ),
           ),
           Expanded(
