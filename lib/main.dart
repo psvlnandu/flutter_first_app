@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/screens/add_drink_screen.dart';
 import 'package:flutter_application_1/widgets/drawer/AuthWrapper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/favs_screen.dart';
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         '/favs': (context) => const FavsScreen(),
         '/checkout': (context) => const CheckoutScreen(),
         '/profile':(context)=>const AuthScreen(),
+        '/add-drink':(context)=>const AddDrinkScreen(),
       },
     );
   }

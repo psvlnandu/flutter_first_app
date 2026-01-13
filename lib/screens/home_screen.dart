@@ -22,7 +22,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController =
       TextEditingController(); // Added for search
-      
+
   String _currentSearchQuery = ""; // Track what we are currently showing
   int _currentPage = 1;
 
@@ -145,9 +145,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     for (var drink in itemsToFetch) {
       try {
         List<Map<String, String>> images = await getCoffeeImageBatch(
-      drink['name'],
-      _currentPage,
-    );
+          drink['name'],
+          _currentPage,
+        );
         for (var img in images) {
           newItems.add({
             'id': img['id'],
@@ -223,6 +223,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
 
         actions: [
+          // "+" to be in the top right corner
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.brown),
+            onPressed: () => Navigator.pushNamed(context, '/add-drink'),
+          ),
           profileAsync.when(
             data: (data) {
               if (data == null) return const SizedBox.shrink();
@@ -362,17 +367,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 if (index == coffeeFeed.length)
                   return const CircularProgressIndicator();
                 final item = coffeeFeed[index];
-                final isFavorite = favItems.any((fav) => fav['id'] == item['id']);
+                final isFavorite = favItems.any(
+                  (fav) => fav['id'] == item['id'],
+                );
                 return CoffeeCard(
                   item: item,
-                  isFavorite:
-                      isFavorite, // This is now synced with Firebase!
-                  onToggleFavorite: () => ref
-                      .read(coffeeProvider.notifier)
-                      .toggleFirebaseFav(item),
-                  onAddToCart: () => ref
-                      .read(coffeeProvider.notifier)
-                      .addToFirebaseCart(item),
+                  isFavorite: isFavorite, // This is now synced with Firebase!
+                  onToggleFavorite: () =>
+                      ref.read(coffeeProvider.notifier).toggleFirebaseFav(item),
+                  onAddToCart: () =>
+                      ref.read(coffeeProvider.notifier).addToFirebaseCart(item),
                 );
               },
             ),
@@ -380,6 +384,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (_isLoading) const LinearProgressIndicator(color: Colors.brown),
         ],
       ),
+
       // NEW: DragTarget for the Cart!
       floatingActionButton: DragTarget<Map<String, dynamic>>(
         onAccept: (item) => ref.read(cartProvider.notifier).addToCart(item),
@@ -403,7 +408,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-Future<List<Map<String, String>>> getCoffeeImageBatch(String query, int page) async {
+Future<List<Map<String, String>>> getCoffeeImageBatch(
+  String query,
+  int page,
+) async {
   final String api_key = Env.apiKey; // Use your actual key
 
   // Notice 'per_page=10' in the URL - that's the key change!
