@@ -126,42 +126,71 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                       },
                       builder: (context, candidateData, rejectedData) {
                         final bool isHovering = candidateData.isNotEmpty;
-                        return GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            height: 200,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isHovering
-                                  ? Colors.brown.withOpacity(0.1)
-                                  : Colors.grey[200],
-                              border: Border.all(
-                                color: isHovering
-                                    ? Colors.brown
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: _selectedImagePath == null
-                                ? const Icon(Icons.add_a_photo)
-                                : ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child:
-                                        (_selectedImagePath!.startsWith(
-                                              'http',
-                                            ) ||
-                                            kIsWeb)
-                                        ? Image.network(
-                                            _selectedImagePath!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Image.file(
-                                            File(_selectedImagePath!),
-                                            fit: BoxFit.cover,
-                                          ),
+                        return Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                height: 200,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: isHovering
+                                      ? Colors.brown.withOpacity(0.1)
+                                      : Colors.grey[200],
+                                  border: Border.all(
+                                    color: isHovering
+                                        ? Colors.brown
+                                        : Colors.transparent,
+                                    width: 2,
                                   ),
-                          ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: _selectedImagePath == null
+                                    ? const Icon(Icons.add_a_photo)
+                                    : ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child:
+                                            (_selectedImagePath!.startsWith(
+                                                  'http',
+                                                ) ||
+                                                kIsWeb)
+                                            ? Image.network(
+                                                _selectedImagePath!,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : Image.file(
+                                                File(_selectedImagePath!),
+                                                fit: BoxFit.cover,
+                                              ),
+                                      ),
+                              ),
+                            ),
+
+                            if (_selectedImagePath != null)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.black.withOpacity(
+                                    0.5,
+                                  ),
+                                  radius: 18,
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImagePath =
+                                            null; // Clear the image
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ),
+                          ],
                         );
                       },
                     ),
