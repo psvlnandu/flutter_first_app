@@ -115,9 +115,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadFullFeed(); // Load the first page
+    // Listen to scroll movements
+    _scrollController.addListener(() {
+      // If we are at 80% of the scroll height, load more!
 
-    
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoading) {
+          _loadFullFeed();
+        }
+      }
+    });
   }
+  
+  // Unified loading function to handle both feed and search
+  Future<void> _loadFullFeed({String? query, bool isNewSearch = false}) async {
+    setState(() => _isLoading = true);
+    if (isNewSearch) {
+      _currentPage = 1;
+      _currentSearchQuery = query ?? "";
+    }
+    List<Map<String, dynamic>> newItems = [];
+    // If query is empty, use your default menu, otherwise search specifically for that term
+    final itemsToFetch = _currentSearchQuery.isEmpty
+        ? _coffeeMenu
+        : [
+            {'name': _currentSearchQuery, 'status': 'available'},
+          ];
+    for (var drink in itemsToFetch) {
+      try {
+        List<Map<String, String>> images = await getCoffeeImageBatch(
+          drink['name'],
+          _currentPage,
+        );
+        for (var img in images) {
+          newItems.add({
+            'id': img['id'],
+            'name': drink['name'],
+            'image': img['url'],
+            'status': drink['status'],
+            'isFavorite': false,
+          });
+        }
+      } catch (e) {
+        debugPrint("Error fetching images: $e");
+      }
+    }
+
+    // UPDATED: Push to Riverpod instead of local list
+    if (_currentPage == 1) {
+      ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
+      _scrollToTop(); // Scroll up when showing new search results
+    } else {
+      ref.read(coffeeProvider.notifier).addItems(newItems..shuffle());
+    }
+
+    _currentPage++;
+    setState(() => _isLoading = false);
+  }
+
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
