@@ -103,13 +103,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   //In Flutter, functions that interact with controllers (like _scrollController) or update the UI (via setState) must stay inside the state class.
   void _scrollToTop() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
-      );
-    }
+    // 1. Wait for the UI to actually finish building the new list
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 2. Double check the controller is actually attached to a list
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
@@ -129,7 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
   }
-  
+
   // Unified loading function to handle both feed and search
   Future<void> _loadFullFeed({String? query, bool isNewSearch = false}) async {
     setState(() => _isLoading = true);
@@ -167,7 +171,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // UPDATED: Push to Riverpod instead of local list
     if (_currentPage == 1) {
       ref.read(coffeeProvider.notifier).setFeed(newItems..shuffle());
-      _scrollToTop(); // Scroll up when showing new search results
+      if (isNewSearch) {
+        _scrollToTop();
+      } // Scroll up when showing new search results
     } else {
       ref.read(coffeeProvider.notifier).addItems(newItems..shuffle());
     }
@@ -175,7 +181,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _currentPage++;
     setState(() => _isLoading = false);
   }
-
 
   final List<Map<String, dynamic>> _cart = []; // NEW: Your cart list
 
@@ -331,7 +336,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 prefixIcon: const Icon(Icons.auto_awesome),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () { //clear button
+                  onPressed: () {
+                    //clear button
                     _searchController.clear();
                     ref
                         .read(coffeeProvider.notifier)
