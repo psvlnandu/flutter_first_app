@@ -48,7 +48,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
   }
 
   String?
-  _imagePath; // we now stor string path?URL instead of File to handle both Unsplash and Local
+  _selectedImagePath; // we now stor string path?URL instead of File to handle both Unsplash and Local
 
   File? _selectedImage;
   double _rating = 0;
@@ -117,31 +117,54 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: _selectedImage == null
-                          ? Container(
-                              height: 200,
-                              width: double.infinity,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.add_a_photo),
-                            )
-                          : kIsWeb
-                          ? Image.network(
-                              _selectedImage!
-                                  .path, // On web, this is a Blob URL
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.file(
-                              _selectedImage!, // On mobile, we use the file system
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
+                    DragTarget<Map<String, dynamic>>(
+                      onAccept: (data) {
+                        setState(() {
+                          _selectedImagePath =
+                              data['image']; // Capture the Unsplash URL!
+                        });
+                      },
+                      builder: (context, candidateData, rejectedData) {
+                        final bool isHovering = candidateData.isNotEmpty;
+                        return GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            height: 200,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: isHovering
+                                  ? Colors.brown.withOpacity(0.1)
+                                  : Colors.grey[200],
+                              border: Border.all(
+                                color: isHovering
+                                    ? Colors.brown
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
                             ),
+                            child: _selectedImagePath == null
+                                ? const Icon(Icons.add_a_photo)
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child:
+                                        (_selectedImagePath!.startsWith(
+                                              'http',
+                                            ) ||
+                                            kIsWeb)
+                                        ? Image.network(
+                                            _selectedImagePath!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.file(
+                                            File(_selectedImagePath!),
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                          ),
+                        );
+                      },
                     ),
-
                     const SizedBox(height: 20),
                     // Reuse your Google Maps Autocomplete widget here
                     TextField(
@@ -170,8 +193,8 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                           return;
                         }
                         final entry = DrinkEntry(
-                          imagePath: _selectedImage!
-                              .path, // Safe because of the null check above
+                          imagePath: _selectedImagePath!,
+
                           location: _locationController.text,
                           rating: _rating,
                           notes: _notesController.text,
