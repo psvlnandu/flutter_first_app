@@ -157,6 +157,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                                             ? Image.network(
                                                 _selectedImagePath!,
                                                 fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
                                               )
                                             : Image.file(
                                                 File(_selectedImagePath!),
