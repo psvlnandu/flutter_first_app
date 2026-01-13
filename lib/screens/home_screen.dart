@@ -123,6 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent * 0.8) {
         if (!_isLoading) {
+          debugPrint('HomeScreen-$_isLoading');
           _loadFullFeed();
         }
       }
@@ -337,7 +338,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         .searchCoffee("", isNewSearch: true);
                   },
                 ),
-                
+
                 // AI icon
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),

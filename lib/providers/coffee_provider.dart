@@ -20,14 +20,15 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
   String lastQuery = "";
   // Unified loading function to handle both feed and search
   Future<void> searchCoffee(String query, {bool isNewSearch = false}) async {
+    if(isLoading)return;
     isLoading = true;
     if (isNewSearch) {
       _currentPage = 1;
       // Save the query so we know what to 'load more' of later
       lastQuery = query.isEmpty ? "Coffee" : query;
     }
-    // Use a default search if the query is empty
-    final searchTerm = query.isEmpty ? "Coffee" : query;
+    // // Use a default search if the query is empty
+    // final searchTerm = query.isEmpty ? "Coffee" : query;
 
     // List<Map<String, dynamic>> newItems = [];
     // If query is empty, use your default menu, otherwise search specifically for that term
@@ -48,7 +49,7 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
           .map(
             (img) => {
               'id': img['id'],
-              'name': searchTerm,
+              'name': lastQuery,
               'image': img['url'],
               'status': 'available',
               'isFavorite': false,

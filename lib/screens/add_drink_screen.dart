@@ -23,15 +23,18 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
   void initState() {
     super.initState();
 
-    
     _scrollController.addListener(() {
+      if (!_scrollController.hasClients) return;
       final notifier = ref.read(coffeeProvider.notifier);
-
+      // Check if we are close to the bottom
+      double triggerFetchThreshold =
+          _scrollController.position.maxScrollExtent * 0.8;
       // If we are at 80% of the scroll height and not already loading...
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.8) {
+      if (_scrollController.position.pixels >= triggerFetchThreshold) {
         if (!notifier.isLoading) {
           // Trigger the next page of the current search
+
+          debugPrint('Add_DRINK-${notifier.isLoading}');
           notifier.searchCoffee(notifier.lastQuery);
         }
       }
@@ -195,8 +198,11 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
             child: Column(
               children: [
                 const CoffeeSearchBar(hintText: 'Search scrapbook images...'),
-                const Expanded(
+                Expanded(
                   child: UnsplashGallery(
+                    controller:
+                        _scrollController, // <--- Ensure this is passed!
+                    crossAxisCount: 3,
                     isDraggable: true,
                   ), // Dragging enabled!
                 ),
