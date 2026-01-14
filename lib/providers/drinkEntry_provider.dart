@@ -10,7 +10,22 @@ final drinkEntryProvider =
     StateNotifierProvider<DrinkEntryNotifier, AsyncValue<void>>((ref) {
       return DrinkEntryNotifier();
     });
+/*
+  userEntriesStreamProvider
+- create a stream that fetches only the current user's entries.
+*/
+final userEntriesStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Stream.value([]);
 
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .collection('entries')
+      .orderBy('createdAt', descending: true) // Newest first
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+});
 class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
   DrinkEntryNotifier() : super(const AsyncValue.data(null));
 

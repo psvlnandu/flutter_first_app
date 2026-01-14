@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/auth_provider.dart';
 import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
+import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
 import 'package:flutter_application_1/providers/favs_provider.dart';
 import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
 import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../env/env.dart'; // Import your Env class
@@ -205,6 +207,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.watch(coffeeProvider);
     final cart = ref.watch(cartProvider);
     final profileAsync = ref.watch(userProfileProvider);
+      // 1. Watch your personal entries instead of Unsplash
+    final userEntries = ref.watch(userEntriesStreamProvider);
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: Theme.of(context).textTheme.apply(fontFamily: 'Coolvetica'),
@@ -359,14 +363,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // _loadFullFeed(query: value, isNewSearch: true),
               ),
             ),
+            
             Expanded(
-              // Just call the class "UnsplashGallery" which holds the "Pinterest" grid logic
-              child: UnsplashGallery(
-                controller: _scrollController,
-                crossAxisCount: 4,
-                isDraggable: false, // Normal view here
+                child: ref.watch(userEntriesStreamProvider).when(
+                  data: (entries) {
+                    if (entries.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          "Your diary is empty.\nTap + to add your first coffee!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontFamily: 'Coolvetica', fontSize: 18),
+                        ),
+                      );
+                    }
+                    
+                    // Personal Pinterest Grid
+                    return MasonryGridView.count(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(12),
+                      crossAxisCount: 4, 
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final drink = entries[index];
+                        return _buildDiaryCard(drink); // The detailed card we'll build below
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator(color: Colors.brown)),
+                  error: (err, stack) => Center(child: Text("Error loading diary: $err")),
+                ),
               ),
-            ),
             // Use the loading state from your provider for the bottom indicator
             if (ref.watch(coffeeProvider.notifier).isLoading)
               const LinearProgressIndicator(color: Colors.brown),
@@ -395,6 +423,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+}
+
+Widget _buildDiaryCard(Map<String, dynamic> drink) {
+  return GestureDetector(
+    onTap: () {
+      // Future: Navigate to Detail Page using drink['id']
+      debugPrint("Clicked on drink: ${drink['id']}");
+    },
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: Image.network(
+          drink['imageUrl'],
+          fit: BoxFit.cover,
+          // This ensures images load smoothly
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              height: 150,
+              color: Colors.grey[200],
+              child: const Center(child: Icon(Icons.coffee, color: Colors.brown)),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => Container(
+            height: 150,
+            color: Colors.grey[300],
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 Future<List<Map<String, String>>> getCoffeeImageBatch(
