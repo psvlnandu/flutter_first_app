@@ -136,8 +136,13 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                                 GestureDetector(
                                   onTap: _pickImage,
                                   child: Container(
-                                    height: 200,
                                     width: double.infinity,
+                                    constraints: const BoxConstraints(
+                                      minHeight:
+                                          150, // Minimum height for the "Add" icon
+                                      maxHeight:
+                                          400, // Prevents giant images from taking over the screen
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isHovering
                                           ? Colors.brown.withOpacity(0.1)
@@ -163,7 +168,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                                                     kIsWeb)
                                                 ? Image.network(
                                                     _selectedImagePath!,
-                                                    fit: BoxFit.cover,
+                                                    fit: BoxFit.contain,
                                                     errorBuilder:
                                                         (
                                                           context,
@@ -175,7 +180,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                                                   )
                                                 : Image.file(
                                                     File(_selectedImagePath!),
-                                                    fit: BoxFit.cover,
+                                                    fit: BoxFit.contain,
                                                   ),
                                           ),
                                   ),
@@ -224,7 +229,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                         ),
                         TextField(
                           controller: _notesController,
-                          maxLength: 500, 
+                          maxLength: 500,
                           decoration: const InputDecoration(
                             labelText: "Notes (Optional)",
                           ),
@@ -284,19 +289,16 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                   flex: 3, // Takes up 60% of the screen
                   child: Column(
                     children: [
-                      const CoffeeSearchBar(
-                        hintText: 'Search inspo images...',
-                      ),
+                      const CoffeeSearchBar(hintText: 'Search inspo images...'),
                       Expanded(
                         child: UnsplashGallery(
-                          controller:
-                              _scrollController, // <--- Ensure this is passed!
+                          controller: _scrollController,
                           crossAxisCount: 3,
                           isDraggable: true,
-                        ), // Dragging enabled!
+                        ),
                       ),
                     ],
-                  ), // We will create this helper
+                  ),
                 ),
               ],
             ),
