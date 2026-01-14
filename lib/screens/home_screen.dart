@@ -456,11 +456,14 @@ Widget _buildDiaryCard(Map<String, dynamic> drink) {
               child: const Center(child: Icon(Icons.coffee, color: Colors.brown)),
             );
           },
-          errorBuilder: (context, error, stackTrace) => Container(
-            height: 150,
-            color: Colors.grey[300],
-            child: const Icon(Icons.broken_image, color: Colors.grey),
-          ),
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint("Image Error for URL: ${drink['imageUrl']}");
+            return Container(
+              height: 150, 
+              color: Colors.grey[300], 
+              child: const Icon(Icons.broken_image)
+            );
+          },
         ),
       ),
     ),

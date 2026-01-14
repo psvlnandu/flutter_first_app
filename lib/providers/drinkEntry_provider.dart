@@ -55,11 +55,14 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
         final storageRef = _storage.ref().child(
           'users/${user.uid}/drinks/${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
-
+        
+        
+        
         if (kIsWeb) {
           try {
             final response = await http.get(Uri.parse(entry.imagePath));
             if (response.statusCode == 200) {
+              // Wait for the upload to FINISH
               await storageRef.putData(response.bodyBytes);
             } else {
               throw Exception("Failed to fetch blob: ${response.statusCode}");
@@ -73,10 +76,12 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
           await storageRef.putFile(File(entry.imagePath));
         }
         finalImageUrl = await storageRef.getDownloadURL();
+        debugPrint('Successfully generated Download URL: $finalImageUrl');
       } else {
         // HANDLE UNPLASH / REMOTE URL
         // We don't upload to Storage; we just save the direct link
-        finalImageUrl = entry.imagePath;debugPrint('Step 1: Using direct URL: $finalImageUrl');
+        finalImageUrl = entry.imagePath;
+        debugPrint('Step 1: Using direct URL: $finalImageUrl');
       }
       debugPrint('Step 2: Writing to Firestore...');
       // 2. Save Metadata + finalImageUrl to Firestore
