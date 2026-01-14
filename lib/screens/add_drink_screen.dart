@@ -104,203 +104,211 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
     final state = ref.watch(drinkEntryProvider);
     final coffeeFeed = ref.watch(coffeeProvider);
     final entryState = ref.watch(drinkEntryProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text("New Drink Album Entry")),
-      body: Stack(
-        // Wrap in a Stack to show a loading overlay
-        children: [
-          Row(
-            children: [
-              // 1. LEFT SIDE: Your current form
-              Expanded(
-                flex: 2, // Takes up 40% of the screen
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      DragTarget<Map<String, dynamic>>(
-                        onAccept: (data) {
-                          setState(() {
-                            _selectedImagePath =
-                                data['image']; // Capture the Unsplash URL!
-                          });
-                        },
-                        builder: (context, candidateData, rejectedData) {
-                          final bool isHovering = candidateData.isNotEmpty;
-                          return Stack(
-                            children: [
-                              GestureDetector(
-                                onTap: _pickImage,
-                                child: Container(
-                                  height: 200,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: isHovering
-                                        ? Colors.brown.withOpacity(0.1)
-                                        : Colors.grey[200],
-                                    border: Border.all(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: Theme.of(context).textTheme.apply(fontFamily: 'Coolvetica'),
+      ),
+      child: Scaffold(
+        appBar: AppBar(title: const Text("New Drink Album Entry")),
+        body: Stack(
+          // Wrap in a Stack to show a loading overlay
+          children: [
+            Row(
+              children: [
+                // 1. LEFT SIDE: Your current form
+                Expanded(
+                  flex: 2, // Takes up 40% of the screen
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        DragTarget<Map<String, dynamic>>(
+                          onAccept: (data) {
+                            setState(() {
+                              _selectedImagePath =
+                                  data['image']; // Capture the Unsplash URL!
+                            });
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            final bool isHovering = candidateData.isNotEmpty;
+                            return Stack(
+                              children: [
+                                GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    height: 200,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
                                       color: isHovering
-                                          ? Colors.brown
-                                          : Colors.transparent,
-                                      width: 2,
+                                          ? Colors.brown.withOpacity(0.1)
+                                          : Colors.grey[200],
+                                      border: Border.all(
+                                        color: isHovering
+                                            ? Colors.brown
+                                            : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: _selectedImagePath == null
-                                      ? const Icon(Icons.add_a_photo)
-                                      : ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                    child: _selectedImagePath == null
+                                        ? const Icon(Icons.add_a_photo)
+                                        : ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child:
+                                                (_selectedImagePath!.startsWith(
+                                                      'http',
+                                                    ) ||
+                                                    kIsWeb)
+                                                ? Image.network(
+                                                    _selectedImagePath!,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => const Icon(
+                                                          Icons.broken_image,
+                                                        ),
+                                                  )
+                                                : Image.file(
+                                                    File(_selectedImagePath!),
+                                                    fit: BoxFit.cover,
+                                                  ),
                                           ),
-                                          child:
-                                              (_selectedImagePath!.startsWith(
-                                                    'http',
-                                                  ) ||
-                                                  kIsWeb)
-                                              ? Image.network(
-                                                  _selectedImagePath!,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder:
-                                                      (
-                                                        context,
-                                                        error,
-                                                        stackTrace,
-                                                      ) => const Icon(
-                                                        Icons.broken_image,
-                                                      ),
-                                                )
-                                              : Image.file(
-                                                  File(_selectedImagePath!),
-                                                  fit: BoxFit.cover,
-                                                ),
-                                        ),
-                                ),
-                              ),
-                              if (_selectedImagePath != null)
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.black.withOpacity(
-                                      0.5,
-                                    ),
-                                    radius: 18,
-                                    child: IconButton(
-                                      icon: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _selectedImagePath =
-                                              null; // Clear the image
-                                        });
-                                      },
-                                    ),
                                   ),
                                 ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      // Reuse your Google Maps Autocomplete widget here
-                      TextField(
-                        controller: _locationController,
-                        decoration: const InputDecoration(
-                          labelText: "Location",
-                          suffixIcon: Icon(Icons.map),
-                        ),
-                      ),
-                      starRating(
-                        rating: _rating,
-                        onRatingChanged: (val) => setState(() => _rating = val),
-                      ),
-                      TextField(
-                        controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: "Notes (Optional)",
-                        ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_selectedImagePath == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Please pick or drag an image first!",
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-
-                          debugPrint('_selectedImagePath: $_selectedImagePath');
-                          final entry = DrinkEntry(
-                            imagePath: _selectedImagePath!,
-                            location: _locationController.text,
-                            rating: _rating,
-                            notes: _notesController.text,
-                          );
-                          ref
-                              .read(drinkEntryProvider.notifier)
-                              .saveEntry(entry)
-                              .then((_) {
-                                final state = ref.read(drinkEntryProvider);
-                                if (state is AsyncError) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Firebase Error: ${state.error}",
+                                if (_selectedImagePath != null)
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.black.withOpacity(
+                                        0.5,
+                                      ),
+                                      radius: 18,
+                                      child: IconButton(
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedImagePath =
+                                                null; // Clear the image
+                                          });
+                                        },
                                       ),
                                     ),
-                                  );
-                                } else if (mounted) {
-                                  Navigator.pop(context);
-                                }
-                              });
-                        },
-                        child: const Text("Save to Album"),
-                      ),
-                    ],
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // Reuse your Google Maps Autocomplete widget here
+                        TextField(
+                          controller: _locationController,
+                          decoration: const InputDecoration(
+                            labelText: "Location",
+                            suffixIcon: Icon(Icons.map),
+                          ),
+                        ),
+                        starRating(
+                          rating: _rating,
+                          onRatingChanged: (val) =>
+                              setState(() => _rating = val),
+                        ),
+                        TextField(
+                          controller: _notesController,
+                          decoration: const InputDecoration(
+                            labelText: "Notes (Optional)",
+                          ),
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 30),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (_selectedImagePath == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Please pick or drag an image first!",
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            debugPrint(
+                              '_selectedImagePath: $_selectedImagePath',
+                            );
+                            final entry = DrinkEntry(
+                              imagePath: _selectedImagePath!,
+                              location: _locationController.text,
+                              rating: _rating,
+                              notes: _notesController.text,
+                            );
+                            ref
+                                .read(drinkEntryProvider.notifier)
+                                .saveEntry(entry)
+                                .then((_) {
+                                  final state = ref.read(drinkEntryProvider);
+                                  if (state is AsyncError) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Firebase Error: ${state.error}",
+                                        ),
+                                      ),
+                                    );
+                                  } else if (mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                });
+                          },
+                          child: const Text("Save to Album"),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              // vertical divider
-              const VerticalDivider(width: 1, thickness: 1),
-              // RIGHT SIDE: Unsplash Gallery
-              Expanded(
-                flex: 3, // Takes up 60% of the screen
-                child: Column(
-                  children: [
-                    const CoffeeSearchBar(
-                      hintText: 'Search scrapbook images...',
-                    ),
-                    Expanded(
-                      child: UnsplashGallery(
-                        controller:
-                            _scrollController, // <--- Ensure this is passed!
-                        crossAxisCount: 3,
-                        isDraggable: true,
-                      ), // Dragging enabled!
-                    ),
-                  ],
-                ), // We will create this helper
-              ),
-            ],
-          ),
-
-          if (entryState.isLoading)
-            Container(
-              color: Colors.black26, // Dims the screen
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.brown),
-              ),
+                // vertical divider
+                const VerticalDivider(width: 1, thickness: 1),
+                // RIGHT SIDE: Unsplash Gallery
+                Expanded(
+                  flex: 3, // Takes up 60% of the screen
+                  child: Column(
+                    children: [
+                      const CoffeeSearchBar(
+                        hintText: 'Search scrapbook images...',
+                      ),
+                      Expanded(
+                        child: UnsplashGallery(
+                          controller:
+                              _scrollController, // <--- Ensure this is passed!
+                          crossAxisCount: 3,
+                          isDraggable: true,
+                        ), // Dragging enabled!
+                      ),
+                    ],
+                  ), // We will create this helper
+                ),
+              ],
             ),
-        ],
+
+            if (entryState.isLoading)
+              Container(
+                color: Colors.black26, // Dims the screen
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.brown),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
