@@ -4,7 +4,7 @@ on:
   push:
     branches:
     # Now, every time you push to learn/widgets, the CD runs immediately. You don't have to create a Pull Request or Merge to see if it works
-      - learn/widgets
+      # - learn/widgets
       - main
 
 jobs:
