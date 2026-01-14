@@ -224,6 +224,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                         ),
                         TextField(
                           controller: _notesController,
+                          maxLength: 500, 
                           decoration: const InputDecoration(
                             labelText: "Notes (Optional)",
                           ),
