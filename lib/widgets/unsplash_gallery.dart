@@ -13,7 +13,7 @@ class UnsplashGallery extends ConsumerWidget {
   const UnsplashGallery({
     super.key,
     this.controller,
-    this.crossAxisCount = 4,
+    this.crossAxisCount = 2,
     this.isDraggable = false,
   });
 

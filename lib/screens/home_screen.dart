@@ -381,7 +381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return MasonryGridView.count(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(12),
-                      crossAxisCount: 4, 
+                      crossAxisCount: 2, 
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       itemCount: entries.length,
