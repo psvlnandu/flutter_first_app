@@ -285,7 +285,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                   child: Column(
                     children: [
                       const CoffeeSearchBar(
-                        hintText: 'Search scrapbook images...',
+                        hintText: 'Search inspo images...',
                       ),
                       Expanded(
                         child: UnsplashGallery(
