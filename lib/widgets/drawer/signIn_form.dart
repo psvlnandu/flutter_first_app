@@ -13,7 +13,8 @@ class SignInForm extends ConsumerStatefulWidget {
 class _SignInFormState extends ConsumerState<SignInForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final bool _isLoading = false;
+  bool _obscurePassword = true; // Start with the password hidden
 
   Future<void> _signIn() async {
     ref.read(authLoadingProvider.notifier).state = true;
@@ -35,7 +36,7 @@ class _SignInFormState extends ConsumerState<SignInForm> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(content: Text(message,style: const TextStyle(fontFamily: 'coolvetica'),), backgroundColor: Colors.red),
       );
     } finally {
       ref.read(authLoadingProvider.notifier).state = false;
@@ -59,7 +60,6 @@ class _SignInFormState extends ConsumerState<SignInForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Welcome back!"),
-            backgroundColor: Colors.green,
           ),
         );
       }
@@ -71,13 +71,31 @@ class _SignInFormState extends ConsumerState<SignInForm> {
         children: [
           TextField(
             controller: _emailController,
+            style: const TextStyle(fontFamily: 'Coolvetica'),
             decoration: const InputDecoration(labelText: 'Email'),
             keyboardType: TextInputType.emailAddress,
           ),
           TextField(
             controller: _passwordController,
-            decoration: const InputDecoration(labelText: 'Password'),
-            obscureText: true,
+            style: const TextStyle(fontFamily: 'Coolvetica'),
+            // 1. Use the variable here
+            obscureText: _obscurePassword, 
+            decoration: InputDecoration(
+              labelText: 'Password',
+              labelStyle: const TextStyle(fontFamily: 'Coolvetica'),
+              // 2. Add the toggle button
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           _isLoading

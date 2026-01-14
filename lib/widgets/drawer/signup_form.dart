@@ -22,7 +22,7 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
   final _passwordController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-
+  bool _obscurePassword = true; // Start with the password hidden
   Future<void> _signUp() async {
     ref.read(authLoadingProvider.notifier).state = true;
 
@@ -77,20 +77,40 @@ class _SignUpFormState extends ConsumerState<SignUpForm> {
         children: [
           TextField(
             controller: _firstNameController,
-            decoration: const InputDecoration(labelText: 'First Name'),
+            style: const TextStyle(fontFamily: 'Coolvetica'),
+            decoration:  InputDecoration(labelText: 'First Name'),
           ),
           TextField(
             controller: _lastNameController,
-            decoration: const InputDecoration(labelText: 'Last Name'),
+            style: const TextStyle(fontFamily: 'Coolvetica'),
+            decoration:  InputDecoration(labelText: 'Last Name'),
           ),
           TextField(
             controller: _emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
+            style: const TextStyle(fontFamily: 'Coolvetica'),
+            decoration:  InputDecoration(labelText: 'Email'),
           ),
           TextField(
             controller: _passwordController,
-            decoration: const InputDecoration(labelText: 'Password'),
-            obscureText: true,
+            style: const TextStyle(fontFamily: 'Coolvetica'),
+            // 1. Use the variable here
+            obscureText: _obscurePassword, 
+            decoration: InputDecoration(
+              labelText: 'Password',
+              labelStyle: const TextStyle(fontFamily: 'Coolvetica'),
+              // 2. Add the toggle button
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           isLoading

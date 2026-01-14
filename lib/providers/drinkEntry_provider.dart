@@ -10,7 +10,22 @@ final drinkEntryProvider =
     StateNotifierProvider<DrinkEntryNotifier, AsyncValue<void>>((ref) {
       return DrinkEntryNotifier();
     });
+/*
+  userEntriesStreamProvider
+- create a stream that fetches only the current user's entries.
+*/
+final userEntriesStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Stream.value([]);
 
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(user.uid)
+      .collection('entries')
+      .orderBy('createdAt', descending: true) // Newest first
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+});
 class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
   DrinkEntryNotifier() : super(const AsyncValue.data(null));
 
@@ -19,8 +34,10 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Future<void> saveEntry(DrinkEntry entry) async {
+    debugPrint('--- Starting Save Process ---');
     final user = _auth.currentUser;
     if (user == null) {
+      debugPrint('Error: No User Logged In');
       state = AsyncValue.error("User not logged in", StackTrace.current);
       return;
     }
@@ -34,13 +51,24 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
 
       if (isLocalFile && entry.imagePath.isNotEmpty) {
         // HANDLE LOCAL UPLOAD (Mobile File or Web Blob)
+        debugPrint('Step 1: Uploading local file to Storage...');
         final storageRef = _storage.ref().child(
           'users/${user.uid}/drinks/${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
 
         if (kIsWeb) {
-          final response = await http.get(Uri.parse(entry.imagePath));
-          await storageRef.putData(response.bodyBytes);
+          try {
+            final response = await http.get(Uri.parse(entry.imagePath));
+            if (response.statusCode == 200) {
+              await storageRef.putData(response.bodyBytes);
+            } else {
+              throw Exception("Failed to fetch blob: ${response.statusCode}");
+            }
+          } catch (e) {
+            debugPrint("Blob Fetch Error: $e");
+            // If http fails, it might be a CORS/Security issue with the blob
+            rethrow;
+          }
         } else {
           await storageRef.putFile(File(entry.imagePath));
         }
@@ -48,9 +76,9 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
       } else {
         // HANDLE UNPLASH / REMOTE URL
         // We don't upload to Storage; we just save the direct link
-        finalImageUrl = entry.imagePath;
+        finalImageUrl = entry.imagePath;debugPrint('Step 1: Using direct URL: $finalImageUrl');
       }
-
+      debugPrint('Step 2: Writing to Firestore...');
       // 2. Save Metadata + finalImageUrl to Firestore
       final docRef = _db
           .collection('users')
@@ -70,6 +98,7 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
 
       state = const AsyncValue.data(null);
     } catch (e, st) {
+      debugPrint('Error saving entry: $e');
       state = AsyncValue.error(e, st);
     }
   }

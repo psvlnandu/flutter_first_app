@@ -50,26 +50,40 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Widget _buildProfileView(User user) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile'), centerTitle: true),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
-            const SizedBox(height: 20),
-            Text("Welcome back,", style: Theme.of(context).textTheme.bodyLarge),
-            Text(
-              user.email ?? "User",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 30),
-            ElevatedButton.icon(
-              onPressed: () => FirebaseAuth.instance.signOut(),
-              icon: const Icon(Icons.logout),
-              label: const Text("Logout"),
-            ),
-          ],
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: Theme.of(context).textTheme.apply(fontFamily: 'Coolvetica'),
+      ),
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Profile'), centerTitle: true),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircleAvatar(
+                radius: 40,
+                child: Icon(Icons.person, size: 40),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Welcome back,",
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              Text(
+                user.email ?? "User",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: () => FirebaseAuth.instance.signOut(),
+                icon: const Icon(Icons.logout),
+                label: const Text("Logout"),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -80,15 +94,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       length: 2,
       child: Theme(
         data: Theme.of(context).copyWith(
-          textTheme: Theme.of(
-            context,
-          ).textTheme.apply(fontFamily: 'coolvetica'),
+          // 1. Apply to general text (Labels, Tab text, etc.)
+          textTheme: Theme.of(context).textTheme.apply(fontFamily: 'Coolvetica'),
+          // 2. Apply specifically to TextFields (Labels and Hint text)
+          inputDecorationTheme: const InputDecorationTheme(
+            labelStyle: TextStyle(fontFamily: 'Coolvetica'),
+            hintStyle: TextStyle(fontFamily: 'Coolvetica'),
+          ),
+          // 3. Apply specifically to Buttons
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              textStyle: const TextStyle(fontFamily: 'Coolvetica'),
+            ),
+          ),
         ),
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Account'),
             centerTitle: true,
             bottom: const TabBar(
+              labelStyle: TextStyle(fontFamily: 'Coolvetica', fontWeight: FontWeight.bold),
+              unselectedLabelStyle: TextStyle(fontFamily: 'Coolvetica'),
               tabs: [
                 Tab(text: "Sign In"),
                 Tab(text: "Sign Up"),
@@ -106,4 +132,3 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     );
   }
 }
-
