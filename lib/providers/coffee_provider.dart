@@ -8,7 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /*
 The coffeeProvider manages the Product Catalog (fetching from Unsplash), 
 while the cartProvider manages User Selection.
-
+KEY MATCHING-
+Field,Unsplash Key,Your Firebase Key
+Name,alt_description,name
+Image,urls['small'],image
+ID,id,id
 */
 final List<Map<String, dynamic>> initialCoffeeList = [];
 

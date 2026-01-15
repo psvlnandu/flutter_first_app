@@ -21,6 +21,7 @@ class CoffeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String imageUrl = item['urls']?['small'] ?? item['imageUrl'] ?? '';
     return Draggable<Map<String, dynamic>>(
       data: item,
       // What the user sees under their finger while dragging
@@ -30,7 +31,8 @@ class CoffeeCard extends StatelessWidget {
           width: 150,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
-            child: Image.network(item['image'], fit: BoxFit.cover),
+           
+            child: Image.network(imageUrl, fit: BoxFit.cover),
           ),
         ),
       ),
@@ -61,9 +63,11 @@ class CoffeeCard extends StatelessWidget {
                     */
               children: [
                 Image.network(
-                  item['image'],
+                  item['imageUrl'] ?? item['urls']?['small'] ?? '',
                   fit: BoxFit.cover,
                   // The masonry layout loves images of different heights!
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
+
                 ),
 
                 Positioned(
@@ -83,7 +87,7 @@ class CoffeeCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    item['name']!,
+                    item['name'] ?? item['alt_description'] ?? 'Unnamed Coffee',
                     style: TextStyle(
                       fontFamily:
                           'Melodrame', // This must match the 'family' name in pubspec
