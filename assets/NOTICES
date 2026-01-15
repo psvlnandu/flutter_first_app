@@ -1509,6 +1509,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 build_daemon
 characters
+ffi
 package_config
 
 Copyright 2019, the Dart project authors. 
@@ -1863,6 +1864,8 @@ flutter_plugin_android_lifecycle
 image_picker_for_web
 image_picker_macos
 image_picker_platform_interface
+path_provider_android
+path_provider_foundation
 
 Copyright 2013 The Flutter Authors
 
@@ -5597,7 +5600,12 @@ SOFTWARE.
 flutter_lints
 image_picker_linux
 image_picker_windows
+path_provider
+path_provider_linux
+path_provider_platform_interface
+path_provider_windows
 plugin_platform_interface
+xdg_directories
 
 Copyright 2013 The Flutter Authors. All rights reserved.
 
@@ -21399,6 +21407,7 @@ limitations under the License.
 
 --------------------------------------------------------------------------------
 json_annotation
+platform
 
 Copyright 2017, the Dart project authors. All rights reserved.
 Redistribution and use in source and binary forms, with or without
