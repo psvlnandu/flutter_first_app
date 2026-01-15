@@ -5,6 +5,7 @@ import 'package:flutter_application_1/providers/cart_provider.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
 import 'package:flutter_application_1/providers/favs_provider.dart';
+import 'package:flutter_application_1/widgets/coffee_card.dart';
 import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
 import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -207,8 +208,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.watch(coffeeProvider);
     final cart = ref.watch(cartProvider);
     final profileAsync = ref.watch(userProfileProvider);
-      // 1. Watch your personal entries instead of Unsplash
+    // 1. Watch your personal entries instead of Unsplash
     final userEntries = ref.watch(userEntriesStreamProvider);
+    final favItems = ref.watch(userFavoritesProvider).value ?? [];
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: Theme.of(context).textTheme.apply(fontFamily: 'Coolvetica'),
@@ -363,38 +365,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // _loadFullFeed(query: value, isNewSearch: true),
               ),
             ),
-            
+
             Expanded(
-                child: ref.watch(userEntriesStreamProvider).when(
-                  data: (entries) {
-                    if (entries.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          "Your diary is empty.\nTap + to add your first coffee!",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontFamily: 'Coolvetica', fontSize: 18),
-                        ),
+              child: ref
+                  .watch(userEntriesStreamProvider)
+                  .when(
+                    data: (entries) {
+                      if (entries.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Your diary is empty.\nTap + to add your first coffee!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Coolvetica',
+                              fontSize: 18,
+                            ),
+                          ),
+                        );
+                      }
+
+                      // Personal Pinterest Grid
+                      return MasonryGridView.count(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(12),
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        itemCount: entries.length,
+                        itemBuilder: (context, index) {
+                          final drink = entries[index];
+                          final isFavorite = favItems.any(
+                            (fav) => fav['id'] == drink['id'],
+                          );
+                          return _buildDiaryCard(
+                            drink: drink, // Named argument
+                            isFavorite: isFavorite, // Named argument
+                            onToggle: () => ref
+                                .read(coffeeProvider.notifier)
+                                .toggleFirebaseFav(drink),
+                          );
+                        },
                       );
-                    }
-                    
-                    // Personal Pinterest Grid
-                    return MasonryGridView.count(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(12),
-                      crossAxisCount: 2, 
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      itemCount: entries.length,
-                      itemBuilder: (context, index) {
-                        final drink = entries[index];
-                        return _buildDiaryCard(drink); // The detailed card we'll build below
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator(color: Colors.brown)),
-                  error: (err, stack) => Center(child: Text("Error loading diary: $err")),
-                ),
-              ),
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(color: Colors.brown),
+                    ),
+                    error: (err, stack) =>
+                        Center(child: Text("Error loading diary: $err")),
+                  ),
+            ),
             // Use the loading state from your provider for the bottom indicator
             if (ref.watch(coffeeProvider.notifier).isLoading)
               const LinearProgressIndicator(color: Colors.brown),
@@ -425,49 +444,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-Widget _buildDiaryCard(Map<String, dynamic> drink) {
-  return GestureDetector(
-    onTap: () {
-      // Future: Navigate to Detail Page using drink['id']
-      debugPrint("Clicked on drink: ${drink['id']}");
-    },
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+Widget _buildDiaryCard({
+  required Map<String, dynamic> drink,
+  required bool isFavorite,
+  required VoidCallback onToggle,
+}) {
+  return Stack(
+    children: [
+      // 1. THE BASE IMAGE CARD
+      GestureDetector(
+        onTap: () => debugPrint("Clicked on drink: ${drink['id']}"),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.network(
-          drink['imageUrl'],
-          fit: BoxFit.cover,
-          // This ensures images load smoothly
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              height: 150,
-              color: Colors.grey[200],
-              child: const Center(child: Icon(Icons.coffee, color: Colors.brown)),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint("Image Error for URL: ${drink['imageUrl']}");
-            return Container(
-              height: 150, 
-              color: Colors.grey[300], 
-              child: const Icon(Icons.broken_image)
-            );
-          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: Image.network(
+              drink['imageUrl'],
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  height: 150,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: Icon(Icons.coffee, color: Colors.brown),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => Container(
+                height: 150,
+                color: Colors.grey[300],
+                child: const Icon(Icons.broken_image),
+              ),
+            ),
+          ),
         ),
       ),
-    ),
-  );
+
+      // 2. THE OVERLAY HEART
+      Positioned(
+        top: 8,
+        right: 8,
+        child: GestureDetector(
+          onTap: onToggle,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: const BoxDecoration(
+              color: Colors.black26,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Colors.red : Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ), // Correctly closed with a comma, not a semicolon
+    ],
+  ); // Properly close the Stack here
 }
 
 Future<List<Map<String, String>>> getCoffeeImageBatch(
