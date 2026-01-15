@@ -134,7 +134,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                             return Stack(
                               children: [
                                 GestureDetector(
-                                  onTap: _pickImage,
+                                  onTap: _pickImage,    
                                   child: Container(
                                     width: double.infinity,
                                     constraints: const BoxConstraints(

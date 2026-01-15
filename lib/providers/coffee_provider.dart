@@ -54,8 +54,9 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
             (img) => {
               'id': img['id'],
               'name': lastQuery,
-              'image': img['url'],
-              'status': 'available',
+                'imageUrl': img['url'], 
+              'image': img['url'], // Keep for legacy support
+                'status': 'available',
               'isFavorite': false,
             },
           )
@@ -98,7 +99,7 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
         // FIX: Check all possible name keys so Firebase never gets a Null
         'name': item['name'] ?? item['alt_description'] ?? 'Delicious Coffee',
         // FIX: Check all possible image keys
-        'image': item['image'] ?? item['imageUrl'] ?? item['urls']?['small'] ?? '',
+        'imageUrl': item['imageUrl'] ?? item['image'] ?? item['urls']?['small'] ?? '',
         'price': item['price'],
         'addedAt': FieldValue.serverTimestamp(),
       });

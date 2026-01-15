@@ -25,7 +25,7 @@ class _FavsScreenState extends ConsumerState<FavsScreen> {
       body: favsAsync.when(
         data: (favItems) {
           if (favItems.isEmpty) {
-            return const Center(child: Text('No favorites yet! ☕'));
+            return const Center(child: Text('No favorites yet!'));
           }
 
           return MasonryGridView.count(
@@ -34,7 +34,7 @@ class _FavsScreenState extends ConsumerState<FavsScreen> {
             crossAxisSpacing: 12,
             padding: const EdgeInsets.all(12),
             itemCount: favItems.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (context, index) { 
               final rawItem = favItems[index];
               final safeItem = {
                 ...rawItem,
