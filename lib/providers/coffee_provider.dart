@@ -8,7 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /*
 The coffeeProvider manages the Product Catalog (fetching from Unsplash), 
 while the cartProvider manages User Selection.
-
+KEY MATCHING-
+Field,Unsplash Key,Your Firebase Key
+Name,alt_description,name
+Image,urls['small'],image
+ID,id,id
 */
 final List<Map<String, dynamic>> initialCoffeeList = [];
 
@@ -50,8 +54,9 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
             (img) => {
               'id': img['id'],
               'name': lastQuery,
-              'image': img['url'],
-              'status': 'available',
+                'imageUrl': img['url'], 
+              'image': img['url'], // Keep for legacy support
+                'status': 'available',
               'isFavorite': false,
             },
           )
@@ -91,8 +96,10 @@ class CoffeeNotifier extends StateNotifier<List<Map<String, dynamic>>> {
     } else {
       await docRef.set({
         'id': item['id'],
-        'name': item['name'],
-        'image': item['image'],
+        // FIX: Check all possible name keys so Firebase never gets a Null
+        'name': item['name'] ?? item['alt_description'] ?? 'Delicious Coffee',
+        // FIX: Check all possible image keys
+        'imageUrl': item['imageUrl'] ?? item['image'] ?? item['urls']?['small'] ?? '',
         'price': item['price'],
         'addedAt': FieldValue.serverTimestamp(),
       });

@@ -13,7 +13,7 @@ class UnsplashGallery extends ConsumerWidget {
   const UnsplashGallery({
     super.key,
     this.controller,
-    this.crossAxisCount = 4,
+    this.crossAxisCount = 2,
     this.isDraggable = false,
   });
 
@@ -27,22 +27,38 @@ class UnsplashGallery extends ConsumerWidget {
       crossAxisCount: crossAxisCount,
       itemCount: coffeeFeed.length,
       itemBuilder: (context, index) {
-        final item = coffeeFeed[index];
-        final isFavorite = favItems.any((fav) => fav['id'] == item['id']);
+        final rawItem = coffeeFeed[index];
 
+        // 1. NORMALIZE the data so CoffeeCard doesn't get null values
+        final normalizedItem = {
+          ...rawItem,
+          'id': rawItem['id'],
+          'name': rawItem['alt_description'] ?? rawItem['name'] ?? 'Coffee Drink',
+          // Map Unsplash 'urls/small' to the key your CoffeeCard expects
+          'imageUrl': rawItem['urls']?['small'] ?? rawItem['image'] ?? rawItem['imageUrl'] ?? '',
+        };
+        final isFavorite = favItems.any(
+          (fav) => fav['id'] == normalizedItem['id'],
+        );
+
+        // 2. Pass the normalized item to the card
         Widget card = CoffeeCard(
-          item: item,
+          item: normalizedItem,
           isFavorite: isFavorite,
-          onToggleFavorite: () => ref.read(coffeeProvider.notifier).toggleFirebaseFav(item),
-          onAddToCart: () => ref.read(coffeeProvider.notifier).addToFirebaseCart(item),
+          onToggleFavorite: () => ref
+              .read(coffeeProvider.notifier)
+              .toggleFirebaseFav(normalizedItem),
+          onAddToCart: () => ref
+              .read(coffeeProvider.notifier)
+              .addToFirebaseCart(normalizedItem),
         );
 
         // If we are in the AddDrinkScreen, wrap the card so it can be dragged!
         if (isDraggable) {
           return Draggable<Map<String, dynamic>>(
-            data: item,
+            data: normalizedItem,
             feedback: SizedBox(
-              width: 150, 
+              width: 150,
               child: Opacity(opacity: 0.7, child: card),
             ),
             child: card,

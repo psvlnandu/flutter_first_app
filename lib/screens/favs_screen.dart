@@ -13,56 +13,49 @@ class FavsScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<FavsScreen> createState() => _FavsScreenState();
 }
-
 class _FavsScreenState extends ConsumerState<FavsScreen> {
   @override
   Widget build(BuildContext context) {
     final favsAsync = ref.watch(userFavoritesProvider);
-    final user = FirebaseAuth.instance.currentUser;
-    // Get the global list and filter for hearts
-    final allCoffee = ref.watch(coffeeProvider);
-    final favItems = allCoffee
-        .where((item) => item['isFavorite'] == true)
-        .toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Favourites')),
+      appBar: AppBar(
+        title: const Text('Your Favourites', style: TextStyle(fontFamily: 'Melodrame')),
+      ),
       body: favsAsync.when(
         data: (favItems) {
           if (favItems.isEmpty) {
-            return const Center(child: Text('No favorites yet! ☕'));
+            return const Center(child: Text('No favorites yet!'));
           }
+
           return MasonryGridView.count(
-            crossAxisCount: 4,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
+            crossAxisCount: 2, // 4 might be too tiny on mobile; 2 matches your Diary/Feed
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            padding: const EdgeInsets.all(12),
             itemCount: favItems.length,
-            itemBuilder: (context, index) {
-              final item = favItems[index];
+            itemBuilder: (context, index) { 
+              final rawItem = favItems[index];
+              final safeItem = {
+                ...rawItem,
+                'id': rawItem['id'] ?? 'unknown',
+                'imageUrl': rawItem['imageUrl'] ?? rawItem['urls']?['small'] ?? '',
+                'alt_description': rawItem['alt_description'] ?? rawItem['title'] ?? 'Specialty Coffee',
+                'user': rawItem['user'] ?? {'name': 'Premium Roast'},
+              };
+
               return CoffeeCard(
-                item: item,
+                item: safeItem,
                 isFavorite: true,
-                // Pass the Firestore logic here
-                onToggleFavorite: () => _handleToggle(user?.uid, item),
-                onAddToCart: () => {},
+                onToggleFavorite: () => ref.read(coffeeProvider.notifier).toggleFirebaseFav(safeItem),
+                onAddToCart: () => ref.read(coffeeProvider.notifier).addToFirebaseCart(safeItem),
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) =>
-            Center(child: Text('Error loading favorites: $err')),
+        loading: () => const Center(child: CircularProgressIndicator(color: Colors.brown)),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
-  }
-
-  // Logic to remove from Firestore
-  void _handleToggle(String? uid, Map<String, dynamic> item) {
-    if (uid == null) return;
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('favorites')
-        .doc(item['id'])
-        .delete();
   }
 }

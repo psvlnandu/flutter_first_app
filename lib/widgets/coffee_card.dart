@@ -21,6 +21,15 @@ class CoffeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String safeImageUrl = (item['imageUrl'] as String?) ?? 
+                               (item['image'] as String?) ?? 
+                               (item['urls']?['small'] as String?) ?? 
+                               '';
+
+      // DEBUG: This will help you see EXACTLY which item is failing
+      if (safeImageUrl.isEmpty) {
+        debugPrint("MISSING URL for item: ${item['id']} - Keys present: ${item.keys}");
+      }
     return Draggable<Map<String, dynamic>>(
       data: item,
       // What the user sees under their finger while dragging
@@ -30,7 +39,8 @@ class CoffeeCard extends StatelessWidget {
           width: 150,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(15),
-            child: Image.network(item['image'], fit: BoxFit.cover),
+           
+            child: Image.network(safeImageUrl, fit: BoxFit.cover),
           ),
         ),
       ),
@@ -41,6 +51,11 @@ class CoffeeCard extends StatelessWidget {
   }
 
   Widget _buildBaseCard() {
+    final String safeImageUrl = item['imageUrl'] ??  // Check Diary Entry key
+                             item['image']    ??  // Check Favorite key
+                             (item['urls'] != null ? item['urls']['small'] : ''); // Check Unsplash key
+
+    debugPrint('safeImageUrl:$safeImageUrl');
     return Card(
       clipBehavior: Clip.antiAlias, // Ensures image corners are rounded
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -53,17 +68,24 @@ class CoffeeCard extends StatelessWidget {
           }
         },
         child: Column(
+          // mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
               /*
                     The Stack Rule: Every widget inside a Stack is layered on top of the previous one, 
                     starting from the top-left corner by default.
                     */
+                    
               children: [
                 Image.network(
-                  item['image'],
+                  safeImageUrl,
                   fit: BoxFit.cover,
                   // The masonry layout loves images of different heights!
+                  errorBuilder: (context, error, stackTrace) => Container(
+                      height: 100,
+                      color: Colors.grey[200],
+                      child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                  ),
                 ),
 
                 Positioned(
@@ -83,7 +105,7 @@ class CoffeeCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    item['name']!,
+                    item['name'] ?? item['alt_description'] ?? 'Unnamed Coffee',
                     style: TextStyle(
                       fontFamily:
                           'Melodrame', // This must match the 'family' name in pubspec
