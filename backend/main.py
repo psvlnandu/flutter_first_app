@@ -51,8 +51,14 @@ class AddressValidationRequest(BaseModel):
 async def health_check():
     return {"status": "Backend is running!"}
 
+# Temporary in-memory cache
+autocomplete_cache = {}
 @app.get("/api/autocomplete")
 async def autocomplete(input: str, sessionToken: str):
+    cache_key = f"{input.lower()}_{sessionToken}"
+    
+    if cache_key in autocomplete_cache:
+        return autocomplete_cache[cache_key]
     """Google Places Autocomplete proxy"""
     try:
         url = "https://maps.googleapis.com/maps/api/place/autocomplete/json"
@@ -66,7 +72,9 @@ async def autocomplete(input: str, sessionToken: str):
         
         async with httpx.AsyncClient() as client:
             response = await client.get(url, params=params)
-            return response.json()
+            data = response.json()
+            autocomplete_cache[cache_key] = data
+            return data
     except Exception as e:
         return {"error": str(e)}
 

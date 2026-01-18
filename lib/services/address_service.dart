@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
@@ -149,6 +150,7 @@ class AddressService {
     return null;
   }
 
+  static Timer? _debounce;
   static Future<List<AddressAutocompleteOption>> getAutocompletePredictions(
     String input,
   ) async {
@@ -167,40 +169,48 @@ class AddressService {
     if (input.isEmpty) return [];
     if (_sessionToken.isEmpty) initializeSessionToken();
 
-    // final url = Uri.parse(
-    //   // 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
-    //   'http://127.0.0.1:3000/api/autocomplete'
-    //   '?input=${Uri.encodeComponent(input)}'
-    //   '&key=${Env.googleapikey}'
-    //   '&sessiontoken=$_sessionToken'
-    //   '&components=country:us'
-    //   '&language=en',
-    // );
-    final url = Uri.parse(
-      'http://127.0.0.1:3000/api/autocomplete?input=${Uri.encodeComponent(input)}&sessionToken=$_sessionToken',
-    );
+    // CANCEL the previous timer if the user types again quickly
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    final completer = Completer<List<AddressAutocompleteOption>>();
 
-    try {
-      final response = await http.get(url);
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      // final url = Uri.parse(
+      //   // 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+      //   'http://127.0.0.1:3000/api/autocomplete'
+      //   '?input=${Uri.encodeComponent(input)}'
+      //   '&key=${Env.googleapikey}'
+      //   '&sessiontoken=$_sessionToken'
+      //   '&components=country:us'
+      //   '&language=en',
+      // );
+      final url = Uri.parse(
+        'http://127.0.0.1:3000/api/autocomplete?input=${Uri.encodeComponent(input)}&sessionToken=$_sessionToken',
+      );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        debugPrint(
-          'Autocomplete response: ${data['predictions'].length} results',
-        );
+      try {
+        final response = await http.get(url);
 
-        final predictions = (data['predictions'] as List)
-            .map((p) => AddressAutocompleteOption.fromJson(p))
-            .toList();
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          debugPrint(
+            'Autocomplete response: ${data['predictions'].length} results',
+          );
 
-        return predictions;
-      } else {
-        debugPrint('Autocomplete API error: ${response.statusCode}');
+          final predictions = (data['predictions'] as List)
+              .map((p) => AddressAutocompleteOption.fromJson(p))
+              .toList();
+
+          completer.complete(predictions);
+        } else {
+          debugPrint('Autocomplete API error: ${response.statusCode}');
+          completer.complete([]);
+        }
+      } catch (e) {
+        debugPrint('Autocomplete Error: $e');
+        completer.complete([]);
       }
-    } catch (e) {
-      debugPrint('Autocomplete Error: $e');
-    }
-    return [];
+    });
+    return completer.future;
   }
 
   static Future<void> fetchPlaceDetails(
