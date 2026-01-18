@@ -309,7 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 leading: const Icon(Icons.favorite, color: Colors.brown),
                 title: const Text(
                   'Favorites',
-                  style: TextStyle(fontFamily: 'Melodrame', fontSize: 24),
+                  style: TextStyle(fontFamily: 'Coolvetica', fontSize: 24),
                 ),
                 onTap: () {
                   Navigator.pop(context); // Close the drawer first
@@ -322,14 +322,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 leading: const Icon(Icons.person, color: Colors.brown),
                 title: const Text(
                   'Profile',
-                  style: TextStyle(fontFamily: 'Melodrame', fontSize: 24),
+                  style: TextStyle(fontFamily: 'Coolvetica', fontSize: 24),
                 ),
                 onTap: () {
                   Navigator.pop(context); // Close the drawer
                   Navigator.pushNamed(context, '/profile');
                   // We'll set this up later!
                 },
+              ),ListTile(
+                leading: const Icon(Icons.person, color: Colors.brown),
+                title: const Text(
+                  'Dashboard',
+                  style: TextStyle(fontFamily: 'Coolvetica', fontSize: 24),
+                ),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  Navigator.pushNamed(context, '/dashboard');
+                  // We'll set this up later!
+                },
               ),
+
             ],
           ),
         ),
