@@ -21,11 +21,11 @@ class DashboardScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
-          _buildSlider(context, "Your Favourites", data['favorites'], isFav: true),
+          _buildSlider(context, "Your Favourites", data['favorites']  as List<dynamic>, isFav: true),
           const SizedBox(height: 30),
-          _buildSlider(context, "Most Ordered Drinks", data['mostOrdered']),
+          _buildSlider(context, "Most Ordered Drinks", data['mostOrdered'] as List<dynamic>),
           const SizedBox(height: 30),
-          _buildLocationSlider(context, "Frequent Cafes", data['mostVisited']),
+          _buildLocationSlider(context, "Frequent Cafes", data['mostVisited'] as List<dynamic>),
         ],
       ),
     );
