@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
@@ -148,10 +149,11 @@ class AddressService {
     }
     return null;
   }
-
+  static Timer? _debounce;
   static Future<List<AddressAutocompleteOption>> getAutocompletePredictions(
     String input,
-  ) async {
+  ) async 
+  {
     /* As the user types in the address field, this returns a list of suggestions.
       FLOW-
       User types "200 Main"
@@ -166,6 +168,15 @@ class AddressService {
 
     if (input.isEmpty) return [];
     if (_sessionToken.isEmpty) initializeSessionToken();
+    // CANCEL the previous timer if the user types again quickly
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    final completer = Completer<List<AddressAutocompleteOption>>();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+        final results = await _executeSearch(input); // Your actual API call logic
+        completer.complete(results);
+    });
 
     // final url = Uri.parse(
     //   // 'https://maps.googleapis.com/maps/api/place/autocomplete/json'
@@ -200,7 +211,7 @@ class AddressService {
     } catch (e) {
       debugPrint('Autocomplete Error: $e');
     }
-    return [];
+    return completer.future;
   }
 
   static Future<void> fetchPlaceDetails(
