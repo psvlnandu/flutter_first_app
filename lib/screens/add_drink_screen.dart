@@ -49,9 +49,8 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
     super.dispose();
   }
 
-  String?
-  _selectedImagePath; // we now stor string path?URL instead of File to handle both Unsplash and Local
-
+  String?  _selectedImagePath; // we now stor string path?URL instead of File to handle both Unsplash and Local
+  String? _drinkName;
   File? _selectedImage;
   double _rating = 0;
   final _locationController = TextEditingController();
@@ -127,8 +126,10 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                         DragTarget<Map<String, dynamic>>(
                           onAccept: (data) {
                             setState(() {
-                              _selectedImagePath =
-                                  data['image']; // Capture the Unsplash URL!
+                              _selectedImagePath =data['image']; // Capture the Unsplash URL!
+                                                      // Capture the name for the Firestore entry
+                              _drinkName = data['name'] ?? data['alt_description'] ?? 'Specialty Coffee';
+                                  
                             });
                           },
                           builder: (context, candidateData, rejectedData) {
@@ -344,6 +345,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                               '_selectedImagePath: $_selectedImagePath',
                             );
                             final entry = DrinkEntry(
+                              drink_name:_drinkName??"No Name" ,
                               imagePath: _selectedImagePath!,
                               location: _locationController.text,
                               rating: _rating,

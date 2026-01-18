@@ -93,6 +93,7 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
 
       await docRef.set({
         'id': docRef.id,
+        'name': entry.drink_name,
         'imageUrl': finalImageUrl,
         'location': entry.location,
         'rating': entry.rating,
@@ -111,6 +112,7 @@ class DrinkEntryNotifier extends StateNotifier<AsyncValue<void>> {
 
 class DrinkEntry {
   final String? id;
+  final String drink_name;
   final String imagePath; // Local path or URL
   final String location;
   final double rating;
@@ -119,6 +121,7 @@ class DrinkEntry {
 
   DrinkEntry({
     this.id,
+    required this.drink_name, 
     required this.imagePath,
     required this.location,
     required this.rating,
