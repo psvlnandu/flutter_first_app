@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/providers/coffee_provider.dart';
 import 'package:flutter_application_1/providers/drinkEntry_provider.dart';
+import 'package:flutter_application_1/services/address_service.dart';
 import 'package:flutter_application_1/widgets/coffee_search_bar.dart';
 import 'package:flutter_application_1/widgets/unsplash_gallery.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
   @override
   void initState() {
     super.initState();
+    AddressService.initializeSessionToken();
 
     _scrollController.addListener(() {
       if (!_scrollController.hasClients) return;
@@ -134,7 +136,7 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                             return Stack(
                               children: [
                                 GestureDetector(
-                                  onTap: _pickImage,    
+                                  onTap: _pickImage,
                                   child: Container(
                                     width: double.infinity,
                                     constraints: const BoxConstraints(
@@ -215,18 +217,107 @@ class _AddDrinkScreenState extends ConsumerState<AddDrinkScreen> {
                         ),
                         const SizedBox(height: 20),
                         // Reuse your Google Maps Autocomplete widget here
-                        TextField(
-                          controller: _locationController,
-                          decoration: const InputDecoration(
-                            labelText: "Location",
-                            suffixIcon: Icon(Icons.map),
-                          ),
+                        // TextField(
+                        //   controller: _locationController,
+                        //   decoration: const InputDecoration(
+                        //     labelText: "Location",
+                        //     suffixIcon: Icon(Icons.map),
+                        //   ),
+                        // ),
+                        const SizedBox(height: 20),
+
+                        // REPLACING YOUR OLD TEXTFIELD WITH AUTOCOMPLETE
+                        Autocomplete<AddressAutocompleteOption>(
+                          optionsBuilder: (TextEditingValue textEditingValue) async {
+                            // Only search after 3 characters to save on API costs
+                            if (textEditingValue.text.length < 3)
+                              return const Iterable.empty();
+
+                            // Calls your existing Google Places logic
+                            return await AddressService.getAutocompletePredictions(
+                              textEditingValue.text,
+                            );
+                          },
+                          displayStringForOption: (option) =>
+                              option.description,
+                          onSelected: (selection) {
+                            // Update your existing controller with the full address
+                            setState(() {
+                              _locationController.text = selection.description;
+                            });
+                          },
+                          fieldViewBuilder:
+                              (
+                                context,
+                                internalController,
+                                focusNode,
+                                onFieldSubmitted,
+                              ) {
+                                // This keeps the internal Google controller in sync with your form
+                                if (internalController.text !=
+                                    _locationController.text) {
+                                  internalController.text =
+                                      _locationController.text;
+                                }
+
+                                return TextField(
+                                  controller: internalController,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: "Location",
+                                    suffixIcon: Icon(Icons.map),
+                                  ),
+                                  onChanged: (val) =>
+                                      _locationController.text = val,
+                                );
+                              },
+                          // This styles the dropdown results list
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 200,
+                                    maxWidth: 350,
+                                  ),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.zero,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      return ListTile(
+                                        leading: const Icon(
+                                          Icons.coffee_maker,
+                                          color: Colors.brown,
+                                        ),
+                                        title: Text(
+                                          option.mainText,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                        subtitle: Text(
+                                          option.secondaryText,
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
+                                        onTap: () => onSelected(option),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
+
                         starRating(
                           rating: _rating,
                           onRatingChanged: (val) =>
                               setState(() => _rating = val),
                         ),
+                       
                         TextField(
                           controller: _notesController,
                           maxLength: 500,
