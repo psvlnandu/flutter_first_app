@@ -16,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Coffee Journey', style: TextStyle(fontFamily: 'Melodrame')),
+        title: const Text('Your Coffee Journey', style: TextStyle(fontFamily: 'LaGrazielaScriptDemo')),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
